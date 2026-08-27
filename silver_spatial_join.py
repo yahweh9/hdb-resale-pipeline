@@ -43,8 +43,8 @@ def create_spatial_master():
     df_silver.to_parquet(SILVER_SPATIAL_PATH, index=False)
     df2_silver.to_parquet(SILVER_SPATIAL_PATH2, index=False)
     
-    print(f"✅ Saved HDB Spatial Master to {SILVER_SPATIAL_PATH}")
-    print(f"✅ Saved Primary Schools Spatial Master to {SILVER_SPATIAL_PATH2}")
+    print(f"Saved HDB Spatial Master to {SILVER_SPATIAL_PATH}")
+    print(f"Saved Primary Schools Spatial Master to {SILVER_SPATIAL_PATH2}")
     
     return df_silver, df2_silver # Return them so we can print them safely!
 
