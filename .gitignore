@@ -5,3 +5,4 @@ data/
 .venv/
 venv/
 *.egg-info/
+.claude/

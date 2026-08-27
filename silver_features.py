@@ -6,7 +6,7 @@ from sklearn.neighbors import BallTree
 # Paths
 SILVER_SPATIAL_PATH = "data/silver/hdb_resale_spatial.parquet"
 SCHOOLS_SPATIAL_PATH = "data/silver/primary_schools_spatial.parquet" 
-MRT_BRONZE_CSV = "data/bronze/mrt_lrt.csv" 
+MRT_BRONZE_PATH = "data/bronze/mrt_stations.parquet" 
 MALLS_BRONZE_CSV = "data/bronze/singapore_malls.csv"
 
 # Pipeline Output Paths
@@ -39,7 +39,7 @@ def haversine_vectorized(lat1, lon1, lat2, lon2):
 def engineer_spatial_features():
     print("PHASE 1: Base Spatial Features...")
     df = pd.read_parquet(SILVER_SPATIAL_PATH)
-    mrt_df = pd.read_csv(MRT_BRONZE_CSV) 
+    mrt_df = pd.read_parquet(MRT_BRONZE_PATH)
     schools_df = pd.read_parquet(SCHOOLS_SPATIAL_PATH)
     
     df = df.dropna(subset=['latitude', 'longitude'])
@@ -48,8 +48,8 @@ def engineer_spatial_features():
     df['dist_to_cbd_km'] = haversine_vectorized(df['latitude'], df['longitude'], CBD_LAT, CBD_LON).round(2)
 
     # 2. Distance & Name of Nearest MRT
-    mrt_lats, mrt_lons = mrt_df['Latitude'].values, mrt_df['Longitude'].values
-    mrt_names = mrt_df['Name'].values
+    mrt_lats, mrt_lons = mrt_df['latitude'].values, mrt_df['longitude'].values
+    mrt_names = mrt_df['mrt_name'].values
     
     def get_nearest_mrt_info(row):
         distances = haversine_vectorized(row['latitude'], row['longitude'], mrt_lats, mrt_lons)
@@ -71,20 +71,20 @@ def engineer_spatial_features():
         df['within_1km_elite_school'] = (df['dist_to_elite_school_km'] <= 1.0).astype(int)
 
     df.to_parquet(SILVER_FEATURES_STEP1, index=False)
-    print("✅ Phase 1 Complete!\n")
+    print("Phase 1 complete.\n")
 
 def engineer_advanced_spatial_features():
-    print("🚀 PHASE 2: Advanced Spatial & Gravity Models...")
+    print("PHASE 2: Advanced Spatial & Gravity Models...")
     df = pd.read_parquet(SILVER_FEATURES_STEP1)
-    df_mrt = pd.read_csv(MRT_BRONZE_CSV)
+    df_mrt = pd.read_parquet(MRT_BRONZE_PATH)
     df_malls = pd.read_csv(MALLS_BRONZE_CSV)
 
     # 1. Walk Time to MRT
     df['mrt_walk_time_mins'] = np.ceil((df['dist_to_nearest_mrt_km'] * 1000) / 80)
 
     # 2. Raffles Place Index
-    # UPGRADE: Rename 'Name' to 'station_name' to match Phase 1
-    df_mrt = df_mrt.rename(columns={'Name': 'station_name'})
+    # UPGRADE: Rename 'mrt_name' to 'station_name' to match Phase 1
+    df_mrt = df_mrt.rename(columns={'mrt_name': 'station_name'})
     
     # UPGRADE: Create the temporary mock column for travel time
     df_mrt['mins_to_raffles'] = 30 
@@ -151,7 +151,7 @@ def engineer_domain_features():
 
     # SAVE AND VERIFY
     df.to_parquet(SILVER_FEATURES_FINAL, index=False)
-    print(f"✅ Phase 3 Complete! Master dataset ready at: {SILVER_FEATURES_FINAL}\n")
+    print(f"Phase 3 complete. Master dataset ready at: {SILVER_FEATURES_FINAL}\n")
 
 if __name__ == "__main__":
     engineer_spatial_features()
