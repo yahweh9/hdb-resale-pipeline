@@ -76,30 +76,20 @@ def engineer_spatial_features():
 def engineer_advanced_spatial_features():
     print("PHASE 2: Advanced Spatial & Gravity Models...")
     df = pd.read_parquet(SILVER_FEATURES_STEP1)
-    df_mrt = pd.read_parquet(MRT_BRONZE_PATH)
     df_malls = pd.read_csv(MALLS_BRONZE_CSV)
 
     # 1. Walk Time to MRT
     df['mrt_walk_time_mins'] = np.ceil((df['dist_to_nearest_mrt_km'] * 1000) / 80)
 
-    # 2. Raffles Place Index
-    # UPGRADE: Rename 'mrt_name' to 'station_name' to match Phase 1
-    df_mrt = df_mrt.rename(columns={'mrt_name': 'station_name'})
-    
-    # UPGRADE: Create the temporary mock column for travel time
-    df_mrt['mins_to_raffles'] = 30 
-    
-    # Now the merge will work perfectly because those columns exist!
-    df = df.merge(
-        df_mrt[['station_name', 'mins_to_raffles']], 
-        left_on='nearest_mrt_name', 
-        right_on='station_name', 
-        how='left'
-    )
-    df['total_cbd_commute_mins'] = df['mrt_walk_time_mins'] + df['mins_to_raffles']
-    df = df.drop(columns=['station_name'])
+    # Rail travel time to the CBD is deliberately absent. It used to be a flat
+    # 30 minutes for every station, which made total_cbd_commute_mins nothing but
+    # mrt_walk_time_mins plus a constant -- perfectly collinear with it, carrying
+    # no information while reading like a real journey time. Doing it properly
+    # needs a rail network graph (inter-station runtimes plus interchange
+    # penalties); until that exists, walk time to the nearest station is the
+    # honest measure.
 
-    # 3. Proximity Gravity: Malls within 2km
+    # 2. Proximity Gravity: Malls within 2km
     hdb_coords_rad = np.radians(df[['latitude', 'longitude']].values)
     # Using 'lat' and 'lon' because your singapore_malls.csv uses lowercase!
     mall_coords_rad = np.radians(df_malls[['lat', 'lon']].values)
