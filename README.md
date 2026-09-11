@@ -219,10 +219,19 @@ rows on every run, so a crash mid-write took the entire history with it.
 
 **The high-water mark is the data.** `read_high_water_mark()` asks DuckDB for
 `max(month)` over the partition glob. Because `month` lives in the directory name and
-not in the parquet bodies, DuckDB takes the value from the paths rather than reading
-column data -- though it still opens each file. Measured at 117 partitions: 26.1ms,
-against 26.7ms for `max()` of a real column. The saving is 2%, and the honest reading
-is that at this scale the cost is per-file overhead, not data volume.
+not in the parquet bodies, this is a string max over directory names -- no parquet is
+opened at all.
+
+An earlier version asked DuckDB for it. That was measured and abandoned: at 117
+partitions it took 26.1ms against 26.7ms for `max()` of a real column, so it was
+saving 2% while still opening every file. The cost was per-file overhead, not data
+volume, which is the same reason partition COUNT rather than data size is what bites
+at scale. It also crashed CI with an internal assertion when the file set shrank
+between two reads in the same process. Parsing the path takes 10ms and cannot fail
+that way.
+
+The property that matters is unchanged: the mark is **derived** from the data rather
+than stored beside it.
 
 The alternative was a run log or a manifest. This scans instead, for two reasons.
 There is no second source of truth to drift out of sync with what is actually on

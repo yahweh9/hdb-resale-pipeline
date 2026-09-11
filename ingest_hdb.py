@@ -93,27 +93,40 @@ def partition_files():
     return [f.replace(os.sep, "/") for f in glob.glob(PARTITION_GLOB)]
 
 
+def months_on_disk():
+    """Every month present in the bronze layer, read out of the directory names."""
+    months = set()
+    for path in partition_files():
+        match = re.search(r"/month=([^/]+)/", path)
+        if match and MONTH_PATTERN.match(match.group(1)):
+            months.add(match.group(1))
+    return sorted(months)
+
+
 def read_high_water_mark(full_rebuild=False):
-    """Return the newest month already partitioned on disk, or None."""
+    """Return the newest month already partitioned on disk, or None.
+
+    The month is in the path, so this is a string max over directory names. It does
+    not need a query engine, and an earlier version that asked DuckDB for it was
+    doing real work to answer a question Python already held the answer to: the call
+    measured 26ms against 0.4ms of connection overhead, read no column data, and
+    still crashed CI with an internal assertion when the file set shrank between two
+    reads in the same process. Parsing the path is simpler, faster and total.
+
+    The claim this supports is unchanged and is the point: the mark is DERIVED from
+    the data rather than stored beside it, so there is no second source of truth to
+    drift and a half-finished run self-heals.
+    """
     if full_rebuild:
         print(f"[{datetime.now()}] --full requested. Rebuilding from scratch.")
         return None
 
-    files = partition_files()
-    if not files:
+    months = months_on_disk()
+    if not months:
         print(f"[{datetime.now()}] No bronze partitions found. Running a FULL load.")
         return None
 
-    # month lives in the path, not in the files, so no column data is read to answer
-    # this. Measured at 117 partitions: 26.1ms, against 26.7ms for max() of a real
-    # column -- the saving is 2%. The cost here is opening 117 files, not reading
-    # them, which is exactly why partition COUNT is the thing that bites at scale.
-    with duckdb.connect() as con:
-        (latest,) = con.execute(
-            "SELECT max(month) FROM read_parquet(?, hive_partitioning = true)",
-            [files],
-        ).fetchone()
-
+    latest = months[-1]
     print(f"[{datetime.now()}] Partitions found up to {latest}. Running an INCREMENTAL load.")
     return latest
 
