@@ -99,3 +99,34 @@ def test_high_water_mark_follows_the_partitions_when_one_disappears(bronze):
         os.remove(f)
 
     assert ingest_hdb.read_high_water_mark() == "2024-01"
+
+
+def test_summarise_runs_against_partitions_on_disk(bronze, capsys):
+    """Coverage for the reporting path, which had none.
+
+    A NameError was shipped into summarise() and all 36 other tests still passed,
+    because nothing ever called it. The function prints rather than returns, so the
+    assertion is on its output -- weak, but enough to prove it executes.
+    """
+    ingest_hdb.write_partitions(pd.concat([records("2024-01", [1, 2]), records("2024-02", [3])]))
+
+    ingest_hdb.summarise(api_total=3)
+
+    out = capsys.readouterr().out
+    assert "Rows on disk : 3" in out
+    assert "2024-01 -> 2024-02" in out
+    assert "complete against the API total" in out
+
+
+def test_summarise_says_so_when_there_is_nothing(bronze, capsys):
+    ingest_hdb.summarise(api_total=None)
+
+    assert "No partitions on disk" in capsys.readouterr().out
+
+
+def test_summarise_warns_when_the_api_holds_more(bronze, capsys):
+    ingest_hdb.write_partitions(records("2024-01", [1]))
+
+    ingest_hdb.summarise(api_total=500)
+
+    assert "499 transactions are missing" in capsys.readouterr().out

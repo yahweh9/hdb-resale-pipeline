@@ -77,13 +77,30 @@ class IngestError(RuntimeError):
     """Raised when the API cannot be read, or answers with something unusable."""
 
 
+def partition_files():
+    """Every parquet file in the bronze layer, as forward-slashed paths.
+
+    The list is expanded here and handed to DuckDB explicitly rather than passing it
+    the glob and letting it walk the tree. write_partitions creates a month directory
+    before it writes into it, so a crash in between leaves a REAL empty partition
+    directory on disk -- and some DuckDB builds raise an internal assertion when
+    expanding a glob across one. Found by CI on Linux against a newer DuckDB than the
+    one this was written on; it passed locally throughout.
+
+    Expanding in Python also removes work that was being done twice: the caller
+    already globbed to decide whether any partitions existed at all.
+    """
+    return [f.replace(os.sep, "/") for f in glob.glob(PARTITION_GLOB)]
+
+
 def read_high_water_mark(full_rebuild=False):
     """Return the newest month already partitioned on disk, or None."""
     if full_rebuild:
         print(f"[{datetime.now()}] --full requested. Rebuilding from scratch.")
         return None
 
-    if not glob.glob(PARTITION_GLOB):
+    files = partition_files()
+    if not files:
         print(f"[{datetime.now()}] No bronze partitions found. Running a FULL load.")
         return None
 
@@ -94,7 +111,7 @@ def read_high_water_mark(full_rebuild=False):
     with duckdb.connect() as con:
         (latest,) = con.execute(
             "SELECT max(month) FROM read_parquet(?, hive_partitioning = true)",
-            [PARTITION_GLOB],
+            [files],
         ).fetchone()
 
     print(f"[{datetime.now()}] Partitions found up to {latest}. Running an INCREMENTAL load.")
@@ -266,7 +283,8 @@ def write_partitions(df):
 
 def summarise(api_total):
     """Report coverage from disk, flagging any shortfall against the API total."""
-    if not glob.glob(PARTITION_GLOB):
+    files = partition_files()
+    if not files:
         print("\nNo partitions on disk.")
         return
 
@@ -276,7 +294,7 @@ def summarise(api_total):
             SELECT count(*), min(month), max(month), count(DISTINCT month)
             FROM read_parquet(?, hive_partitioning = true)
             """,
-            [PARTITION_GLOB],
+            [files],
         ).fetchone()
 
     print(f"\nRows on disk : {rows:,} across {partitions} partitions")
