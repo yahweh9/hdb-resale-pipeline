@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: fact_resale_txn
+    description: "Grain: one resale transaction. Incremental, replaced a month at a time."
+    columns:
+      - name: resale_txn_key
+        description: Surrogate key, hashed from the source transaction id.
+        data_tests:
+          - unique
+          - not_null
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: town_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_town')
+                field: town_key
+      - name: flat_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_flat')
+                field: flat_key
+      - name: block_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_block')
+                field: block_key
+      - name: resale_price
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: price_psm
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 100
+                max_value: 30000
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+
+  - name: dim_town
+    columns:
+      - name: town_key
+        data_tests: [unique, not_null]
+      - name: town
+        data_tests: [unique, not_null]
+
+  - name: dim_flat
+    columns:
+      - name: flat_key
+        data_tests: [unique, not_null]
+      - name: flat_type
+        description: >
+          accepted_values is the schema-drift tripwire. HDB has added flat types
+          before, and normalises the hyphen in MULTI-GENERATION inconsistently; if a
+          new one appears this fails the build instead of quietly widening dim_flat.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - "1 ROOM"
+                  - "2 ROOM"
+                  - "3 ROOM"
+                  - "4 ROOM"
+                  - "5 ROOM"
+                  - "EXECUTIVE"
+                  - "MULTI GENERATION"
+
+  - name: dim_block
+    columns:
+      - name: block_key
+        data_tests: [unique, not_null]
+      - name: address
+        data_tests: [unique, not_null]

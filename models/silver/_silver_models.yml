@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: silver_hdb_resale
+    description: >
+      One row per resale transaction, typed and normalised. Everything downstream
+      reads this and never touches bronze.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [year_month, source_txn_id]
+    columns:
+      - name: source_txn_id
+        description: >
+          data.gov.sg's row offset, NOT a stable transaction id -- it is reassigned on
+          republish, and 579 values currently appear twice against different sales.
+          Unique only in combination with year_month, which the model-level test above
+          enforces.
+        data_tests:
+          - not_null
+      - name: transaction_month
+        description: First day of the month the resale was registered.
+        data_tests:
+          - not_null
+      - name: town
+        data_tests:
+          - not_null
+      - name: flat_type
+        data_tests:
+          - not_null
+      - name: address
+        description: block || ' ' || street_name, the key OneMap geocoding joins on.
+        data_tests:
+          - not_null
+      - name: resale_price
+        description: Sale price in SGD.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: floor_area_sqm
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: storey_lower
+        description: >
+          Parsed out of storey_range. not_null is the guard on that parse: if HDB
+          changes the '07 TO 09' format, this fails the build rather than silently
+          feeding nulls into dim_flat.
+        data_tests:
+          - not_null
+      - name: remaining_lease_months
+        description: >
+          Parsed from two different upstream formats. Range-checked rather than
+          not_null-checked, because the oldest rows can legitimately omit it.
+          Ceiling is 99 years, the length of a new HDB lease.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1188
+              config:
+                severity: error

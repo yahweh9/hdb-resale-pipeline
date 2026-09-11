@@ -1,0 +1,38 @@
+name: CI
+
+# Every pull request builds the whole warehouse and runs every test. It does this
+# against a committed fixture rather than the live API: a pull request that fails
+# because data.gov.sg is rate-limiting says nothing about the pull request.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: .
+      DUCKDB_PATH: data/fixture/warehouse.duckdb
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Ingest unit tests
+        run: pytest
+
+      - name: Seed the fixture bronze layer
+        run: python seed_fixture.py
+
+      - name: Build the warehouse and run the data tests
+        run: |
+          dbt deps
+          dbt build --vars '{bronze_glob: "data/fixture/hdb_resale/month=*/*.parquet"}'

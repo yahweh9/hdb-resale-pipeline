@@ -1,0 +1,55 @@
+name: Scheduled ingest
+
+# data.gov.sg republishes this dataset monthly. This run proves the pipeline still
+# works against the live API and publishes the result as a build artifact -- it is
+# not a hosted warehouse, and nothing downstream reads it.
+on:
+  schedule:
+    - cron: "0 18 5 * *" # 02:00 SGT on the 6th, a few days after the monthly refresh
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      # Restores the previous run's partitions so the ingest genuinely runs
+      # incrementally. The key is unique per run and the restore-key prefix picks up
+      # the newest earlier cache; a miss simply means a full load, which is correct
+      # rather than merely tolerable.
+      - name: Restore the previous bronze layer
+        uses: actions/cache@v4
+        with:
+          path: data/bronze
+          key: bronze-${{ github.run_id }}
+          restore-keys: bronze-
+
+      - name: Ingest
+        env:
+          API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
+        run: python ingest_hdb.py
+
+      - name: Build the warehouse and run the data tests
+        run: |
+          dbt deps
+          dbt build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: warehouse-${{ github.run_number }}
+          path: |
+            data/bronze
+            data/warehouse.duckdb
+          retention-days: 30

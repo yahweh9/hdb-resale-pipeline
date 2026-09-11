@@ -1,26 +1,40 @@
 """Ingest HDB resale transactions from data.gov.sg into the Bronze layer.
 
-Runs incrementally by default: reads the newest month already on disk, fetches only
-that month and later, then replaces the overlap month wholesale. The overlap month
-is re-fetched rather than skipped because a month stays open -- transactions for
-2026-08 keep landing throughout August, so skipping it would freeze a partial month
-on disk permanently.
+Writes one Hive-style partition per transaction month:
+
+    data/bronze/hdb_resale/month=2024-06/part-0.parquet
+
+A month is replaced wholesale or not touched at all. That is what makes a rerun
+idempotent: re-running March rewrites March and leaves every other month byte for
+byte as it was. The previous version read the whole file into memory, concatenated,
+de-duplicated and rewrote all ~190k rows on every run -- so a crash mid-write took
+the entire history with it.
+
+Runs incrementally by default. The high-water mark is read back off the partitions
+themselves (max(month) over the Hive paths) rather than from a run log. There is no
+second source of truth to drift, DuckDB takes the value from the directory names
+rather than the column data, and a run that dies halfway self-heals on the next
+attempt. At real volume a manifest is the better answer; see the README's "at scale"
+section.
+
+The newest month on disk is re-fetched rather than skipped, because a month stays
+open: transactions for 2026-08 keep landing throughout August, so skipping it would
+freeze a partial month on disk permanently.
 
 Pass --full to rebuild from scratch. That matters more than it looks: an incremental
-run only ever moves the high-water mark FORWARD, so if the file on disk starts at
-2024-06 the ~189k older transactions can never arrive on their own. The first build
-of this file was capped at 50,000 rows, which left exactly that hole -- the summary
-printed at the end of every run flags it against the API's own record count.
-
-Outputs:
-    data/bronze/hdb_resale_raw.parquet   one row per transaction, plus _ingested_at
+run only ever moves the high-water mark FORWARD, so if the oldest partition on disk
+is 2024-06 the ~189k older transactions can never arrive on their own. The summary
+printed at the end of every run flags that against the API's own record count.
 """
 
 import argparse
+import glob
 import os
+import re
 import time
 from datetime import datetime
 
+import duckdb
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -29,7 +43,11 @@ load_dotenv()
 
 DATASET_ID = "d_8b84c4ee58e3cfc0ece0d773c8ca6abc"
 BASE_URL = "https://data.gov.sg/api/action/datastore_search"
-OUTPUT_PATH = "data/bronze/hdb_resale_raw.parquet"
+
+BRONZE_ROOT = "data/bronze/hdb_resale"
+# Forward slashes deliberately: this string is handed to DuckDB as a glob, and
+# DuckDB does not treat a Windows backslash as a path separator.
+PARTITION_GLOB = f"{BRONZE_ROOT}/month=*/*.parquet"
 
 # data.gov.sg serves this dataset anonymously but rate-limits harder without a key.
 # Sending {"x-api-key": None} makes requests raise InvalidHeader, so drop the header
@@ -49,28 +67,46 @@ BACKOFF_BASE = 2
 # drop others the day it changes.
 SORT = "month desc,_id asc"
 
+# Anchored at both ends, and a month of 00 or 13 is rejected. This value is
+# interpolated into a filesystem path, so it is validated as a path component
+# before it ever reaches the filesystem.
+MONTH_PATTERN = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
 
 class IngestError(RuntimeError):
-    """Raised when the API cannot be read after exhausting retries."""
+    """Raised when the API cannot be read, or answers with something unusable."""
 
 
-def get_existing_data(full_rebuild=False):
-    """Load the current Bronze file, or None when starting from scratch."""
+def read_high_water_mark(full_rebuild=False):
+    """Return the newest month already partitioned on disk, or None."""
     if full_rebuild:
         print(f"[{datetime.now()}] --full requested. Rebuilding from scratch.")
         return None
-    if not os.path.exists(OUTPUT_PATH):
-        print(f"[{datetime.now()}] No existing dataset found. Running a FULL load.")
+
+    if not glob.glob(PARTITION_GLOB):
+        print(f"[{datetime.now()}] No bronze partitions found. Running a FULL load.")
         return None
-    print(f"[{datetime.now()}] Found existing dataset. Running an INCREMENTAL load.")
-    return pd.read_parquet(OUTPUT_PATH)
+
+    # month lives in the path, not in the files, so no column data is read to answer
+    # this. Measured at 117 partitions: 26.1ms, against 26.7ms for max() of a real
+    # column -- the saving is 2%. The cost here is opening 117 files, not reading
+    # them, which is exactly why partition COUNT is the thing that bites at scale.
+    with duckdb.connect() as con:
+        (latest,) = con.execute(
+            "SELECT max(month) FROM read_parquet(?, hive_partitioning = true)",
+            [PARTITION_GLOB],
+        ).fetchone()
+
+    print(f"[{datetime.now()}] Partitions found up to {latest}. Running an INCREMENTAL load.")
+    return latest
 
 
 def request_chunk(offset):
     """Fetch one page, retrying transient failures with exponential backoff.
 
-    Retries are bounded. The previous version looped on HTTP 429 with no counter,
-    so an exhausted daily quota hung the run indefinitely with no output.
+    Retries are bounded, and only transient failures are retried. A 404 or a 400 is
+    a defect in this script or a dataset that has moved; the previous version spent
+    62 seconds of backoff on five identical doomed requests before reporting it.
     """
     params = {
         "resource_id": DATASET_ID,
@@ -93,8 +129,29 @@ def request_chunk(offset):
                 time.sleep(wait)
                 continue
 
+            # Fail fast on the rest of the 4xx range. These are client errors: the
+            # same request will be just as wrong on every retry, so backing off five
+            # times only delays the report. IngestError is not a RequestException,
+            # so it leaves the retry loop instead of being caught below.
+            if 400 <= response.status_code < 500:
+                raise IngestError(
+                    f"HTTP {response.status_code} at offset {offset} -- not retryable."
+                    f" Response: {response.text[:200]}"
+                )
+
             response.raise_for_status()
-            return response.json()["result"]
+            payload = response.json()
+
+            # data.gov.sg answers a bad resource_id with HTTP 200 and success=false.
+            # Reading ["result"] straight off that raised KeyError: result, which
+            # points the blame at this file rather than at the API that refused.
+            if not payload.get("success"):
+                raise IngestError(
+                    f"API returned success=false at offset {offset}:"
+                    f" {payload.get('error', payload)}"
+                )
+
+            return payload["result"]
 
         except requests.exceptions.RequestException as e:
             # Retry the failed PAGE rather than aborting the whole run. A full load
@@ -112,7 +169,13 @@ def request_chunk(offset):
 
 
 def fetch_records(latest_month=None):
-    """Page through the API newest-first. Returns the records and the API's total."""
+    """Page through the API newest-first. Returns the records and the API's total.
+
+    Every month at or after `latest_month` comes back complete: rows are sorted
+    newest-first, so paging stops only once a row OLDER than the mark appears, by
+    which point that month has been read in full. That completeness is what lets
+    write_partitions replace a month wholesale instead of merging into it.
+    """
     records = []
     offset = 0
     api_total = None
@@ -122,7 +185,10 @@ def fetch_records(latest_month=None):
 
         if api_total is None:
             api_total = result.get("total")
-            print(f"API reports {api_total:,} total records.")
+            if api_total is None:
+                print("API did not report a total record count.")
+            else:
+                print(f"API reports {api_total:,} total records.")
 
         chunk = result["records"]
         if not chunk:
@@ -148,39 +214,82 @@ def fetch_records(latest_month=None):
     return records, api_total
 
 
-def merge_with_history(existing_df, new_df, latest_month):
-    """Replace the overlap month, keep older history, drop any duplicate _id."""
-    if existing_df is None or latest_month is None:
-        return new_df
+def partition_dir(month):
+    """Build the Hive partition directory for one month, refusing anything else.
 
-    historical_df = existing_df[existing_df["month"] < latest_month]
-    merged = pd.concat([historical_df, new_df], ignore_index=True)
-    print(f"Merged {len(historical_df):,} historical + {len(new_df):,} fetched records.")
-
-    # Belt and braces. Dropping the overlap month above should already make
-    # duplicates impossible; this makes it provable rather than merely intended.
-    # keep="last" prefers the freshly fetched copy over the archived one.
-    before = len(merged)
-    merged = merged.drop_duplicates(subset=["_id"], keep="last")
-    if before != len(merged):
-        print(f"Dropped {before - len(merged):,} duplicate _id rows.")
-
-    return merged
+    The month arrives from the API and is interpolated into a filesystem path, so it
+    is validated as a path component first. A value like ../../etc or a stray empty
+    string would otherwise write outside the bronze root, and a value like 2024-6
+    would write a directory that month=* still matches but that sorts wrongly
+    against 2024-06 -- silently corrupting the high-water mark on the next run.
+    """
+    if not isinstance(month, str) or not MONTH_PATTERN.match(month):
+        raise IngestError(f"Refusing to write a partition for malformed month {month!r}.")
+    return f"{BRONZE_ROOT}/month={month}"
 
 
-def summarise(df, api_total):
-    """Report coverage, flagging any shortfall against what the API says exists."""
-    print(f"\nRows on disk : {len(df):,}")
-    print(f"Month range  : {df['month'].min()} -> {df['month'].max()}")
+def write_partitions(df):
+    """Write one parquet file per month, replacing each month wholesale.
+
+    Returns {month: rows written}.
+    """
+    written = {}
+
+    for month, group in df.groupby("month", sort=True):
+        directory = partition_dir(month)
+        os.makedirs(directory, exist_ok=True)
+
+        target = f"{directory}/part-0.parquet"
+        tmp = f"{directory}/.part-0.parquet.tmp"
+
+        # month is dropped from the file body because DuckDB adds it back from the
+        # path under hive_partitioning, and carrying it in both places is a
+        # duplicate column name that the reader rejects outright.
+        try:
+            group.drop(columns=["month"]).to_parquet(tmp, index=False)
+            # os.replace is atomic on POSIX and overwrite-capable on Windows, so a
+            # concurrent reader sees either the old month or the new one, never a
+            # half-written partition.
+            os.replace(tmp, target)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+
+        written[month] = len(group)
+
+    print(f"Wrote {sum(written.values()):,} records across {len(written)} month partition(s).")
+    if written:
+        months = sorted(written)
+        print(f"  Partitions touched: {months[0]} -> {months[-1]}")
+    return written
+
+
+def summarise(api_total):
+    """Report coverage from disk, flagging any shortfall against the API total."""
+    if not glob.glob(PARTITION_GLOB):
+        print("\nNo partitions on disk.")
+        return
+
+    with duckdb.connect() as con:
+        rows, first, last, partitions = con.execute(
+            """
+            SELECT count(*), min(month), max(month), count(DISTINCT month)
+            FROM read_parquet(?, hive_partitioning = true)
+            """,
+            [PARTITION_GLOB],
+        ).fetchone()
+
+    print(f"\nRows on disk : {rows:,} across {partitions} partitions")
+    print(f"Month range  : {first} -> {last}")
 
     if api_total is None:
         return
 
-    missing = api_total - len(df)
+    missing = api_total - rows
     if missing > 0:
         print(
-            f"\nWARNING: the API holds {api_total:,} records; this file has {len(df):,}."
-            f"\n         {missing:,} transactions are missing, all older than {df['month'].min()}."
+            f"\nWARNING: the API holds {api_total:,} records; this layer has {rows:,}."
+            f"\n         {missing:,} transactions are missing, all older than {first}."
             f"\n         Incremental runs only move forward and will never fetch them."
             f"\n         Run 'python ingest_hdb.py --full' to backfill."
         )
@@ -188,18 +297,11 @@ def summarise(df, api_total):
         print("Coverage     : complete against the API total.")
 
 
-def save_to_bronze(df):
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    df.to_parquet(OUTPUT_PATH, index=False)
-    print(f"Saved {len(df):,} records to {OUTPUT_PATH}")
-
-
 def build_bronze_hdb(full_rebuild=False):
-    existing_df = get_existing_data(full_rebuild=full_rebuild)
+    """Fetch from the high-water mark onward and land it as month partitions."""
+    latest_month = read_high_water_mark(full_rebuild=full_rebuild)
 
-    latest_month = None
-    if existing_df is not None and not existing_df.empty:
-        latest_month = existing_df["month"].max()
+    if latest_month is not None:
         print(f"High-water mark: {latest_month} (re-fetched to catch late transactions)")
 
     records, api_total = fetch_records(latest_month)
@@ -208,17 +310,15 @@ def build_bronze_hdb(full_rebuild=False):
         # Previously this fell through to a no-op save that printed nothing at all,
         # leaving no way to tell "already current" apart from silent failure.
         print("\nNo new records returned. Already up to date.")
-        if existing_df is not None:
-            summarise(existing_df, api_total)
-        return existing_df
+        summarise(api_total)
+        return {}
 
     new_df = pd.DataFrame(records)
     new_df["_ingested_at"] = pd.Timestamp.now(tz="UTC")
 
-    final_df = merge_with_history(existing_df, new_df, latest_month)
-    save_to_bronze(final_df)
-    summarise(final_df, api_total)
-    return final_df
+    written = write_partitions(new_df)
+    summarise(api_total)
+    return written
 
 
 if __name__ == "__main__":
@@ -226,7 +326,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--full",
         action="store_true",
-        help="Ignore the file on disk and re-fetch the entire history.",
+        help="Ignore what is on disk and re-fetch the entire history.",
     )
     args = parser.parse_args()
     build_bronze_hdb(full_rebuild=args.full)

@@ -6,3 +6,10 @@ data/
 venv/
 *.egg-info/
 .claude/
+target/
+dbt_packages/
+logs/
+.pytest_cache/
+.user.yml
+dbt_internal_packages/
+.vscode/

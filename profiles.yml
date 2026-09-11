@@ -1,0 +1,13 @@
+# Checked in deliberately: DuckDB needs no credentials, so there is nothing here
+# worth hiding, and a clean clone can run dbt without hand-writing a file first.
+# CI points DBT_PROFILES_DIR at the repository root to pick this up.
+hdb_resale:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # DUCKDB_PATH lets CI build a throwaway warehouse from the fixture without
+      # overwriting a real one sitting in the same working tree.
+      path: "{{ env_var('DUCKDB_PATH', 'data/warehouse.duckdb') }}"
+      threads: 4
+      schema: main

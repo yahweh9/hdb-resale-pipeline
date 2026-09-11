@@ -1,0 +1,24 @@
+name: hdb_resale
+version: "1.0.0"
+config-version: 2
+
+profile: hdb_resale
+
+# The dbt project sits at the repository root rather than in a dbt/ subdirectory so
+# that every relative data path means the same thing to dbt and to the Python ingest
+# scripts. "data/bronze/hdb_resale" is one string in both places; nested, it would be
+# two strings, and two strings drift.
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests/dbt"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  hdb_resale:
+    silver:
+      +schema: silver
+      +materialized: table
+    gold:
+      +schema: gold
+      +materialized: table

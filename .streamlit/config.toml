@@ -1,0 +1,10 @@
+# Surfaces are pinned so the chart palette can be validated against a known
+# background. The categorical slots below were checked with the dataviz
+# validator against #1a1a19; letting Streamlit pick its own dark would
+# invalidate the contrast results.
+[theme]
+base = "dark"
+backgroundColor = "#0d0d0d"
+secondaryBackgroundColor = "#1a1a19"
+textColor = "#ffffff"
+font = "sans serif"

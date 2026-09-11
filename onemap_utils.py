@@ -36,7 +36,7 @@ raw_password = os.getenv("ONEMAP_PASSWORD")
 ONEMAP_EMAIL = raw_email.strip() if raw_email else None
 ONEMAP_PASSWORD = raw_password.strip() if raw_password else None
 
-HDB_SOURCE = "data/bronze/hdb_resale_raw.parquet"
+HDB_SOURCE = "data/bronze/hdb_resale"  # partitioned dataset; pyarrow discovers month=*
 SCHOOL_SOURCE = "data/bronze/schools_raw.parquet"
 OUTPUT_PATH = "data/bronze/hdb_coordinates.parquet"
 OUTPUT_PATH2 = "data/bronze/schools_coordinates.parquet"

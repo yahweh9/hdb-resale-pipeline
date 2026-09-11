@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: spatial
+    description: >
+      Single-file bronze tables from the two geo ingests. Unlike the resale data these
+      are not partitioned: they are small, slowly changing reference sets that are
+      rebuilt wholesale rather than appended to.
+    tables:
+      - name: mrt_stations
+        description: >
+          The Wikidata SPARQL response as returned, one row per station/line/code
+          combination. Unfiltered: unopened lines and stations with no coordinates
+          are still here, and are excluded in silver rather than at ingest.
+        meta:
+          external_location: "data/bronze/mrt_stations_raw.parquet"
+      - name: hdb_coordinates
+        description: One row per HDB block address, geocoded via OneMap.
+        meta:
+          external_location: "data/bronze/hdb_coordinates.parquet"

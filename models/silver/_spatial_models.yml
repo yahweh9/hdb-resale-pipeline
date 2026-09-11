@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: silver_mrt_stations
+    description: One row per operational MRT/LRT station.
+    columns:
+      - name: station_name
+        data_tests: [unique, not_null]
+      - name: latitude
+        description: Range-checked against Singapore's bounding box. Catches a lat/lon swap, which is the easy mistake to make with WKT's longitude-first ordering.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments: {min_value: 1.15, max_value: 1.48}
+      - name: longitude
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments: {min_value: 103.6, max_value: 104.1}
+
+  - name: silver_hdb_coordinates
+    description: One row per geocoded HDB block address.
+    columns:
+      - name: address
+        data_tests: [unique, not_null]
+      - name: latitude
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments: {min_value: 1.15, max_value: 1.48}
+      - name: longitude
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments: {min_value: 103.6, max_value: 104.1}
