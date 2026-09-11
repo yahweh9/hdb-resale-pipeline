@@ -1,5 +1,7 @@
 # HDB Resale Price Pipeline
 
+[![CI](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml)
+
 An incremental ELT pipeline over Singapore's HDB resale transaction data, built to
 demonstrate data engineering practice rather than exploratory analysis.
 
@@ -357,11 +359,23 @@ ingest_mrt_data.py     MRT stations from Wikidata. Fetch and archive only.
   via OneMap, distance-to-station and distance-to-CBD on `dim_block`
 - Streamlit dashboard over the gold layer
 
-**Written but not yet exercised:** both GitHub Actions workflows. They have never
-run, because this repository is not on GitHub yet. The CI workflow's steps are the
-same commands verified locally against the same fixture, but a workflow that has not
-gone green is not a workflow that works, and it is listed here rather than above for
-that reason.
+**CI runs green on every push and pull request.** It was not green first time, and
+what it caught is worth stating rather than hiding. Two real defects survived a
+locally-passing suite:
+
+- A DuckDB internal assertion on Linux, against a newer DuckDB than this was written
+  on, when the partition file set shrank between two reads in one process. The fix
+  removed the query engine from the high-water mark entirely -- the month is in the
+  directory name, and finding the newest is a string comparison.
+- The fixture only seeded resale bronze. The two spatial models were added afterwards
+  and CI could build barely half the warehouse, which nothing noticed because the
+  workflow had never run.
+
+Both are the reason the line above this one used to read "written but not yet
+exercised". A workflow that has not gone green is not a workflow that works.
+
+**Still not exercised:** the scheduled ingest workflow. It is `workflow_dispatch`
+plus a monthly cron and has not yet fired.
 
 **Deleted, and worth naming.** An earlier pandas feature-engineering track
 (`silver_spatial_join.py`, `silver_features.py`) was removed once the MRT and geocoding
