@@ -24,6 +24,15 @@ import ingest_hdb
 FIXTURE_CSV = "tests/fixtures/hdb_resale_sample.csv"
 FIXTURE_ROOT = "data/fixture/hdb_resale"
 
+# The two spatial sources are single files, not partitioned, so they are seeded
+# straight to the paths their dbt sources point at. Without them CI can build the
+# resale half of the warehouse and nothing else -- which is exactly how the spatial
+# models reached main with a workflow that had never run against them.
+SPATIAL_FIXTURES = {
+    "tests/fixtures/hdb_coordinates_sample.csv": "data/bronze/hdb_coordinates.parquet",
+    "tests/fixtures/mrt_stations_raw_sample.csv": "data/bronze/mrt_stations_raw.parquet",
+}
+
 
 def seed(root=FIXTURE_ROOT):
     """Write the fixture as month partitions under `root`. Returns {month: rows}."""
@@ -46,7 +55,28 @@ def seed(root=FIXTURE_ROOT):
         ingest_hdb.BRONZE_ROOT = original_root
 
     print(f"Seeded {sum(written.values()):,} fixture rows into {root}")
+    seed_spatial()
     return written
+
+
+def seed_spatial():
+    """Write the MRT and coordinate fixtures to the paths their dbt sources expect.
+
+    Refuses to clobber a real bronze file: on a developer machine these paths hold
+    the output of an hour of geocoding API calls, and replacing that with 310 fixture
+    rows would be a bad afternoon.
+    """
+    for source, target in SPATIAL_FIXTURES.items():
+        if os.path.exists(target):
+            print(f"Leaving existing {target} alone (already present).")
+            continue
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        df = pd.read_csv(source, dtype=str)
+        for numeric in ("latitude", "longitude"):
+            if numeric in df.columns:
+                df[numeric] = pd.to_numeric(df[numeric], errors="coerce")
+        df.to_parquet(target, index=False)
+        print(f"Seeded {len(df):,} rows into {target}")
 
 
 if __name__ == "__main__":
