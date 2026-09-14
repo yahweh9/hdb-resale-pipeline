@@ -90,7 +90,7 @@ it to say which blocks sell above or below what their attributes justify.
 | `tests/python/test_valuation.py` | The model beats the baseline on a planted market; the split is by block; planted block premiums get verdicts; thin blocks do not. |
 | `models/analysis/hedonic_validation.py`, `block_fair_value.py` | dbt Python models over `valuation`. |
 | `models/marts/mart_model_validation.sql`, `mart_block_fair_value.sql` | Published shapes; fair value joined to block addresses. |
-| `tests/dbt/assert_model_beats_baseline.sql` | Any scope with 5,000+ test sales: the model's median miss is below the baseline's. The quality gate. |
+| `tests/dbt/assert_model_beats_baseline.sql` | Any scope with 1,000+ test sales: the model's median miss is below the baseline's. The quality gate. |
 | `tests/dbt/assert_fair_value_verdicts_follow_the_rules.sql` | A verdict needs 10+ sales and an interval clear of zero. |
 | `render_findings.py`, `publish_edition.py`, `FINDINGS.md`, `dashboard.py` | Validation table, fair value summary and top blocks; a fair value table in the dashboard. |
 
