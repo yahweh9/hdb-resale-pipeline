@@ -1,0 +1,11 @@
+term,level,band_order,sales,is_reference,naive_pct,model_pct,model_ci_low_pct,model_ci_high_pct
+lease_band,under 50,1,7700,False,-14.3,-42.7,-43.4,-42.0
+lease_band,50-60,2,38132,False,-15.1,-33.0,-33.5,-32.5
+lease_band,60-70,3,57538,False,-24.1,-26.1,-26.5,-25.6
+lease_band,70-80,4,50125,False,-21.8,-20.5,-20.9,-20.1
+lease_band,80-90,5,32224,False,-9.0,-10.1,-10.6,-9.6
+lease_band,90+,6,54355,True,0.0,0.0,0.0,0.0
+mrt_band,0-400m,1,78682,False,10.1,18.9,18.1,19.8
+mrt_band,400-800m,2,99886,False,4.6,12.9,12.1,13.6
+mrt_band,800m-1.2km,3,43601,False,-1.1,7.6,6.9,8.3
+mrt_band,over 1.2km,4,17905,True,0.0,0.0,0.0,0.0

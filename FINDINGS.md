@@ -102,9 +102,43 @@ periphery, where the alternatives are worse. One reading is that in the centre a
 station is bundled with everything else that is central, so the 17.4% is measuring the
 bundle rather than the station. That reading is untested here.
 
-**What this can't tell you:** whether any of these figures is the value of the station
-itself. Even within a ring, near-station blocks differ from far ones in age, estate
-type and amenity density. Every number in this table remains an upper bound.
+**Holding the rest constant.** The hedonic model (see
+[What would settle this](#what-would-settle-this)) compares flats in the same town, with
+the same lease band, storey, flat type and month:
+
+<!-- table: mrt_model_vs_naive -->
+| Distance to MRT | Sales | Naive (group-by) | Model (like for like) | 95% interval |
+|---|---|---|---|---|
+| 0-400m | 78,682 | +10.1% | +18.9% | +18.1% to +19.8% |
+| 400-800m | 99,886 | +4.6% | +12.9% | +12.1% to +13.6% |
+| 800m-1.2km | 43,601 | -1.1% | +7.6% | +6.9% to +8.3% |
+| over 1.2km | 17,905 | +0.0% | +0.0% | +0.0% to +0.0% |
+<!-- /table -->
+
+Like for like, the premium is roughly double the group-by's, and it keeps falling with
+distance instead of flattening past 800m. That direction means the flats far from a
+station carry other advantages — town, lease or storey — which the group-by credited to
+distance. Nor is the premium one number over time:
+
+<!-- table: mrt_premium_by_year -->
+| Year | 0-400m vs over 1.2km | 95% interval |
+|---|---|---|
+| 2017 | +21.9% | +20.6% to +23.2% |
+| 2018 | +24.4% | +22.9% to +25.9% |
+| 2019 | +24.6% | +23.0% to +26.1% |
+| 2020 | +22.6% | +21.2% to +24.1% |
+| 2021 | +20.1% | +18.7% to +21.4% |
+| 2022 | +16.9% | +15.8% to +18.0% |
+| 2023 | +14.9% | +13.9% to +16.0% |
+| 2024 | +14.1% | +13.1% to +15.2% |
+| 2025 | +16.7% | +15.6% to +17.8% |
+| 2026 | +17.3% | +16.2% to +18.4% |
+<!-- /table -->
+
+**What this can't tell you:** whether the model's figure is the value of the station
+itself. Within a town, near-station blocks can still differ in ways the model cannot
+see: amenity density, block age within a lease band, and walking routes — distances
+here are straight-line.
 
 ---
 
@@ -181,8 +215,27 @@ This is included because it is the clearest demonstration in the project of why 
 dashboard needs a document beside it. The chart would have been correct, legible, and
 would have led a reader to exactly the wrong conclusion.
 
-**What this can't tell you:** the size of the true lease effect. Separating it needs
-a model that holds location constant — see [What would settle this](#what-would-settle-this).
+**Holding location constant, the lease effect appears.** The hedonic model compares flats
+in the same town and MRT band, with the same storey, flat type and month. It covers all
+flat types, so its group-by column differs from the 4-room tables above:
+
+<!-- table: lease_model_vs_naive -->
+| Lease remaining (years) | Sales | Naive (group-by) | Model (like for like) | 95% interval |
+|---|---|---|---|---|
+| under 50 | 7,700 | -14.3% | -42.7% | -43.4% to -42.0% |
+| 50-60 | 38,132 | -15.1% | -33.0% | -33.5% to -32.5% |
+| 60-70 | 57,538 | -24.1% | -26.1% | -26.5% to -25.6% |
+| 70-80 | 50,125 | -21.8% | -20.5% | -20.9% to -20.1% |
+| 80-90 | 32,224 | -9.0% | -10.1% | -10.6% to -9.6% |
+| 90+ | 54,355 | +0.0% | +0.0% | +0.0% to +0.0% |
+<!-- /table -->
+
+Like for like, value falls at every step as the lease runs down, to about 43% below a
+90+ year lease. The group-by put the shortest leases at only 14% below.
+
+**What this can't tell you:** the lease separately from the building's age. Remaining
+lease and age are the same clock read in opposite directions, so each figure is the
+combined price of an older flat with less lease left.
 
 ---
 
@@ -203,6 +256,28 @@ Median price per square metre, all flat types:
 The shape matters more than the total. **2017–2019 was flat and slightly declining.**
 The entire 52% rise happened from 2020 onward, with the sharpest single jump in 2021
 (+12.8%), alongside the highest transaction volume in the series.
+
+The median moves whenever the *mix* of flats sold moves. The model's month terms price
+the same flat — same town, MRT band, lease band, storey and flat type — month by month
+(last month of each year, Jan 2017 = 100):
+
+<!-- table: price_index_by_year -->
+| Month | Median psm index | Quality-adjusted index | 95% interval |
+|---|---|---|---|
+| 2017-12 | 99.0 | 98.8 | 98.0 to 99.6 |
+| 2018-12 | 97.3 | 98.1 | 97.2 to 99.0 |
+| 2019-12 | 97.6 | 98.9 | 98.1 to 99.7 |
+| 2020-12 | 106.6 | 105.3 | 104.4 to 106.1 |
+| 2021-12 | 119.9 | 119.4 | 118.5 to 120.3 |
+| 2022-12 | 130.1 | 131.5 | 130.5 to 132.5 |
+| 2023-12 | 135.5 | 138.1 | 137.0 to 139.2 |
+| 2024-12 | 148.2 | 153.8 | 152.6 to 155.1 |
+| 2025-12 | 151.1 | 157.1 | 155.8 to 158.3 |
+| 2026-09 | 149.0 | 157.5 | 155.8 to 159.3 |
+<!-- /table -->
+
+Like for like, prices rose about 57% to Sep 2026, and they did not flatten in 2026: the
+median's pause came from which flats sold, not from what flats were worth.
 
 Alongside it, the gap between mature and non-mature estates **collapsed and then
 partially recovered**:
@@ -262,17 +337,21 @@ others move freely. The standard answer is a **hedonic pricing model** — estim
 of them at once, so each coefficient is read holding the rest constant:
 
 ```
-log(price_psm) ~ dist_to_cbd + dist_to_mrt + remaining_lease
-               + floor_tier + flat_type + town + time
+log(price_psm) ~ town + mrt_band + lease_band + floor_tier + flat_type + month
 ```
 
-That is what turns "flats near stations sell for 7.2% more" into "station proximity is
-worth X%, holding distance to the CBD, lease and storey constant" — a claim that
-survives being questioned. The gold star schema is already the feature table for it:
-`fact_resale_txn` joined to its four dimensions is one query from a design matrix.
+**It is now built** ([hedonic.py](hedonic.py)), as a dbt Python model over the gold star
+schema. Distance to the CBD is left out: 96.8% of its variation lies between towns, so it
+cannot be separated from the town term. Distance and lease enter as bands, standard
+errors are clustered by block, and the fitting code must recover planted effects from
+synthetic markets before it runs on real sales.
 
-**It has not been built.** Saying what the data cannot currently support is more useful
-than an extra chart.
+It turns "flats near stations sell for 7.2% more" into "being within 400m of a station
+is worth about 19%, in the same town, with the same lease, storey, flat type and month".
+Findings 2, 4 and 5 carry its tables beside the group-by ones.
+
+It still assumes each effect is the same everywhere — a station is worth the same in
+Bishan as in Woodlands — and it has not yet been tested on blocks it has never seen.
 
 ---
 

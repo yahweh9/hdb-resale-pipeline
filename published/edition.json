@@ -3,6 +3,9 @@
   "sales": 240074,
   "published_on": "2026-09-14",
   "tables": [
-    "mart_mrt_premium_by_band"
+    "mart_mrt_premium_by_band",
+    "mart_price_index",
+    "mart_model_vs_naive",
+    "mart_effects_by_year"
   ]
 }

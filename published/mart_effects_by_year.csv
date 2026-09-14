@@ -1,0 +1,361 @@
+calendar_year,term,level,band_order,sales,is_reference,effect_pct,ci_low_pct,ci_high_pct
+2017,lease_band,under 50,1,144,False,-37.5,-38.9,-36.0
+2017,lease_band,50-60,2,2149,False,-30.1,-31.1,-29.0
+2017,lease_band,60-70,3,6251,False,-25.9,-26.7,-25.0
+2017,lease_band,70-80,4,4384,False,-24.3,-25.2,-23.5
+2017,lease_band,80-90,5,4829,False,-16.1,-17.0,-15.1
+2017,lease_band,90+,6,2752,True,0.0,0.0,0.0
+2017,mrt_band,0-400m,1,6886,False,21.9,20.6,23.2
+2017,mrt_band,400-800m,2,8591,False,15.0,13.9,16.1
+2017,mrt_band,800m-1.2km,3,3565,False,9.6,8.5,10.7
+2017,mrt_band,over 1.2km,4,1467,True,0.0,0.0,0.0
+2017,town,ANG MO KIO,,942,False,4.7,3.4,6.0
+2017,town,BEDOK,,1148,False,2.8,1.8,3.9
+2017,town,BISHAN,,446,False,29.6,27.7,31.6
+2017,town,BUKIT BATOK,,736,False,-9.4,-10.3,-8.5
+2017,town,BUKIT MERAH,,829,False,28.4,26.8,30.0
+2017,town,BUKIT PANJANG,,694,False,-22.2,-23.5,-20.9
+2017,town,BUKIT TIMAH,,57,False,37.7,35.5,39.9
+2017,town,CENTRAL AREA,,182,False,36.9,32.1,41.9
+2017,town,CHOA CHU KANG,,804,False,-27.8,-28.6,-27.1
+2017,town,CLEMENTI,,438,False,16.0,14.0,18.1
+2017,town,GEYLANG,,567,False,9.7,7.5,12.0
+2017,town,HOUGANG,,980,False,-7.0,-7.9,-6.1
+2017,town,JURONG EAST,,457,False,-5.2,-6.7,-3.6
+2017,town,JURONG WEST,,1620,False,-17.2,-18.0,-16.4
+2017,town,KALLANG/WHAMPOA,,691,False,14.5,12.6,16.5
+2017,town,MARINE PARADE,,124,False,38.5,34.7,42.3
+2017,town,PASIR RIS,,626,False,-8.1,-9.0,-7.1
+2017,town,PUNGGOL,,1316,False,-23.7,-24.6,-22.9
+2017,town,QUEENSTOWN,,527,False,29.6,27.4,31.8
+2017,town,SEMBAWANG,,525,False,-29.2,-30.2,-28.2
+2017,town,SENGKANG,,1534,False,-25.2,-26.1,-24.2
+2017,town,SERANGOON,,430,False,12.2,10.6,13.9
+2017,town,TAMPINES,,1299,False,-2.4,-3.3,-1.6
+2017,town,TOA PAYOH,,749,False,15.3,13.2,17.4
+2017,town,WOODLANDS,,1531,False,-24.6,-25.3,-24.0
+2017,town,YISHUN,,1257,False,-13.7,-14.4,-13.0
+2018,lease_band,under 50,1,199,False,-40.7,-42.3,-39.0
+2018,lease_band,50-60,2,2579,False,-33.5,-34.5,-32.5
+2018,lease_band,60-70,3,6649,False,-28.4,-29.2,-27.5
+2018,lease_band,70-80,4,4364,False,-24.2,-25.1,-23.3
+2018,lease_band,80-90,5,4492,False,-16.5,-17.5,-15.6
+2018,lease_band,90+,6,3278,True,0.0,0.0,0.0
+2018,mrt_band,0-400m,1,7133,False,24.4,22.9,25.9
+2018,mrt_band,400-800m,2,9134,False,17.0,15.7,18.3
+2018,mrt_band,800m-1.2km,3,3812,False,10.6,9.3,11.9
+2018,mrt_band,over 1.2km,4,1482,True,0.0,0.0,0.0
+2018,town,ANG MO KIO,,1014,False,4.0,2.5,5.5
+2018,town,BEDOK,,1138,False,4.3,3.1,5.5
+2018,town,BISHAN,,405,False,29.0,27.0,31.0
+2018,town,BUKIT BATOK,,841,False,-11.3,-12.1,-10.4
+2018,town,BUKIT MERAH,,874,False,28.8,27.1,30.5
+2018,town,BUKIT PANJANG,,753,False,-21.9,-23.3,-20.5
+2018,town,BUKIT TIMAH,,61,False,42.7,39.5,46.0
+2018,town,CENTRAL AREA,,177,False,36.9,32.0,42.0
+2018,town,CHOA CHU KANG,,933,False,-29.5,-30.3,-28.8
+2018,town,CLEMENTI,,486,False,15.7,13.6,17.8
+2018,town,GEYLANG,,451,False,14.2,11.3,17.1
+2018,town,HOUGANG,,1035,False,-6.4,-7.4,-5.5
+2018,town,JURONG EAST,,489,False,-4.0,-5.8,-2.1
+2018,town,JURONG WEST,,1622,False,-19.7,-20.5,-18.9
+2018,town,KALLANG/WHAMPOA,,626,False,16.6,14.6,18.6
+2018,town,MARINE PARADE,,140,False,41.7,38.2,45.3
+2018,town,PASIR RIS,,625,False,-7.7,-8.8,-6.7
+2018,town,PUNGGOL,,1537,False,-23.5,-24.5,-22.5
+2018,town,QUEENSTOWN,,621,False,29.2,27.0,31.4
+2018,town,SEMBAWANG,,586,False,-31.5,-32.4,-30.6
+2018,town,SENGKANG,,1641,False,-26.7,-27.6,-25.7
+2018,town,SERANGOON,,460,False,13.3,11.4,15.2
+2018,town,TAMPINES,,1368,False,-0.6,-1.6,0.3
+2018,town,TOA PAYOH,,729,False,15.4,12.7,18.0
+2018,town,WOODLANDS,,1663,False,-27.0,-27.7,-26.3
+2018,town,YISHUN,,1286,False,-14.9,-15.7,-14.2
+2019,lease_band,under 50,1,396,False,-44.8,-46.1,-43.4
+2019,lease_band,50-60,2,2987,False,-35.3,-36.2,-34.4
+2019,lease_band,60-70,3,6648,False,-29.3,-30.1,-28.5
+2019,lease_band,70-80,4,4264,False,-23.6,-24.4,-22.7
+2019,lease_band,80-90,5,3374,False,-15.5,-16.5,-14.4
+2019,lease_band,90+,6,4517,True,0.0,0.0,0.0
+2019,mrt_band,0-400m,1,7201,False,24.6,23.0,26.1
+2019,mrt_band,400-800m,2,9087,False,16.6,15.2,17.9
+2019,mrt_band,800m-1.2km,3,4326,False,11.1,9.8,12.5
+2019,mrt_band,over 1.2km,4,1572,True,0.0,0.0,0.0
+2019,town,ANG MO KIO,,954,False,2.6,1.2,4.1
+2019,town,BEDOK,,1147,False,3.7,2.4,4.9
+2019,town,BISHAN,,417,False,27.9,26.2,29.7
+2019,town,BUKIT BATOK,,874,False,-13.1,-13.9,-12.2
+2019,town,BUKIT MERAH,,880,False,29.4,27.5,31.3
+2019,town,BUKIT PANJANG,,937,False,-23.6,-24.9,-22.2
+2019,town,BUKIT TIMAH,,71,False,47.2,43.7,50.8
+2019,town,CENTRAL AREA,,187,False,38.3,32.1,44.8
+2019,town,CHOA CHU KANG,,923,False,-28.9,-29.7,-28.1
+2019,town,CLEMENTI,,479,False,15.8,13.6,18.0
+2019,town,GEYLANG,,536,False,13.6,11.2,16.1
+2019,town,HOUGANG,,967,False,-6.9,-8.0,-5.8
+2019,town,JURONG EAST,,500,False,-6.6,-8.4,-4.9
+2019,town,JURONG WEST,,1703,False,-20.4,-21.1,-19.6
+2019,town,KALLANG/WHAMPOA,,600,False,19.7,17.6,21.9
+2019,town,MARINE PARADE,,125,False,37.0,32.7,41.4
+2019,town,PASIR RIS,,585,False,-7.5,-8.4,-6.5
+2019,town,PUNGGOL,,1160,False,-21.2,-22.3,-20.1
+2019,town,QUEENSTOWN,,563,False,29.7,27.5,32.0
+2019,town,SEMBAWANG,,643,False,-30.5,-31.4,-29.5
+2019,town,SENGKANG,,1795,False,-24.6,-25.7,-23.3
+2019,town,SERANGOON,,437,False,14.1,12.1,16.1
+2019,town,TAMPINES,,1413,False,-0.9,-1.9,0.1
+2019,town,TOA PAYOH,,706,False,13.8,11.2,16.6
+2019,town,WOODLANDS,,1794,False,-26.8,-27.5,-26.2
+2019,town,YISHUN,,1790,False,-15.3,-16.4,-14.3
+2020,lease_band,under 50,1,521,False,-46.4,-47.5,-45.3
+2020,lease_band,50-60,2,3281,False,-37.2,-38.1,-36.2
+2020,lease_band,60-70,3,6053,False,-29.5,-30.3,-28.7
+2020,lease_band,70-80,4,4521,False,-23.1,-23.9,-22.3
+2020,lease_band,80-90,5,2637,False,-14.4,-15.5,-13.3
+2020,lease_band,90+,6,6320,True,0.0,0.0,0.0
+2020,mrt_band,0-400m,1,7852,False,22.6,21.2,24.1
+2020,mrt_band,400-800m,2,9570,False,15.6,14.3,16.9
+2020,mrt_band,800m-1.2km,3,4208,False,10.2,8.9,11.5
+2020,mrt_band,over 1.2km,4,1703,True,0.0,0.0,0.0
+2020,town,ANG MO KIO,,997,False,6.4,5.0,7.9
+2020,town,BEDOK,,1315,False,3.7,2.3,5.1
+2020,town,BISHAN,,448,False,24.5,22.2,26.9
+2020,town,BUKIT BATOK,,686,False,-12.5,-13.5,-11.6
+2020,town,BUKIT MERAH,,795,False,29.2,26.9,31.4
+2020,town,BUKIT PANJANG,,1143,False,-24.2,-25.4,-23.1
+2020,town,BUKIT TIMAH,,47,False,43.2,38.6,48.0
+2020,town,CENTRAL AREA,,170,False,41.1,32.9,49.9
+2020,town,CHOA CHU KANG,,942,False,-27.1,-27.8,-26.3
+2020,town,CLEMENTI,,583,False,18.9,15.8,22.0
+2020,town,GEYLANG,,570,False,11.4,9.3,13.5
+2020,town,HOUGANG,,1250,False,-6.7,-8.2,-5.2
+2020,town,JURONG EAST,,502,False,-7.6,-9.2,-6.0
+2020,town,JURONG WEST,,1439,False,-18.5,-19.6,-17.4
+2020,town,KALLANG/WHAMPOA,,568,False,17.3,14.8,19.8
+2020,town,MARINE PARADE,,132,False,35.5,31.6,39.5
+2020,town,PASIR RIS,,849,False,-9.6,-10.5,-8.6
+2020,town,PUNGGOL,,1748,False,-21.9,-23.1,-20.7
+2020,town,QUEENSTOWN,,653,False,32.0,29.7,34.3
+2020,town,SEMBAWANG,,450,False,-28.5,-29.4,-27.5
+2020,town,SENGKANG,,2159,False,-24.8,-25.8,-23.8
+2020,town,SERANGOON,,418,False,11.9,9.9,13.9
+2020,town,TAMPINES,,1700,False,-2.4,-3.5,-1.3
+2020,town,TOA PAYOH,,671,False,12.8,10.4,15.2
+2020,town,WOODLANDS,,1406,False,-25.1,-25.8,-24.5
+2020,town,YISHUN,,1692,False,-15.5,-16.4,-14.6
+2021,lease_band,under 50,1,709,False,-42.7,-43.7,-41.6
+2021,lease_band,50-60,2,4163,False,-35.0,-35.8,-34.2
+2021,lease_band,60-70,3,6634,False,-27.3,-28.0,-26.6
+2021,lease_band,70-80,4,6243,False,-21.7,-22.3,-21.0
+2021,lease_band,80-90,5,3124,False,-11.0,-12.1,-10.0
+2021,lease_band,90+,6,8214,True,0.0,0.0,0.0
+2021,mrt_band,0-400m,1,10383,False,20.1,18.7,21.4
+2021,mrt_band,400-800m,2,11900,False,13.9,12.7,15.0
+2021,mrt_band,800m-1.2km,3,4907,False,8.5,7.3,9.7
+2021,mrt_band,over 1.2km,4,1897,True,0.0,0.0,0.0
+2021,town,ANG MO KIO,,1055,False,6.2,4.8,7.5
+2021,town,BEDOK,,1616,False,2.7,1.6,3.8
+2021,town,BISHAN,,570,False,21.8,19.8,23.9
+2021,town,BUKIT BATOK,,752,False,-10.2,-11.1,-9.3
+2021,town,BUKIT MERAH,,1173,False,22.9,21.5,24.4
+2021,town,BUKIT PANJANG,,1055,False,-20.6,-21.8,-19.5
+2021,town,BUKIT TIMAH,,82,False,34.5,31.3,37.7
+2021,town,CENTRAL AREA,,261,False,39.4,32.8,46.4
+2021,town,CHOA CHU KANG,,1570,False,-23.2,-23.8,-22.6
+2021,town,CLEMENTI,,672,False,16.1,14.0,18.2
+2021,town,GEYLANG,,744,False,11.0,9.1,13.0
+2021,town,HOUGANG,,1471,False,-7.2,-8.3,-6.0
+2021,town,JURONG EAST,,565,False,-6.4,-8.0,-4.7
+2021,town,JURONG WEST,,1500,False,-15.7,-16.7,-14.8
+2021,town,KALLANG/WHAMPOA,,882,False,14.3,12.6,16.2
+2021,town,MARINE PARADE,,204,False,30.3,26.8,33.9
+2021,town,PASIR RIS,,951,False,-8.6,-9.8,-7.4
+2021,town,PUNGGOL,,2742,False,-23.1,-24.0,-22.2
+2021,town,QUEENSTOWN,,987,False,26.1,24.2,28.0
+2021,town,SEMBAWANG,,513,False,-22.9,-23.7,-22.0
+2021,town,SENGKANG,,2751,False,-23.4,-24.2,-22.5
+2021,town,SERANGOON,,519,False,10.1,8.5,11.6
+2021,town,TAMPINES,,2149,False,-4.8,-5.8,-3.8
+2021,town,TOA PAYOH,,916,False,12.9,10.6,15.2
+2021,town,WOODLANDS,,1637,False,-21.6,-22.2,-21.0
+2021,town,YISHUN,,1750,False,-12.6,-13.5,-11.8
+2022,lease_band,under 50,1,810,False,-39.6,-40.7,-38.5
+2022,lease_band,50-60,2,3882,False,-33.1,-33.9,-32.4
+2022,lease_band,60-70,3,6690,False,-25.8,-26.4,-25.2
+2022,lease_band,70-80,4,5871,False,-19.9,-20.4,-19.4
+2022,lease_band,80-90,5,2506,False,-7.9,-8.9,-7.0
+2022,lease_band,90+,6,6961,True,0.0,0.0,0.0
+2022,mrt_band,0-400m,1,8891,False,16.9,15.8,18.0
+2022,mrt_band,400-800m,2,11222,False,11.6,10.6,12.5
+2022,mrt_band,800m-1.2km,3,4882,False,6.6,5.7,7.5
+2022,mrt_band,over 1.2km,4,1725,True,0.0,0.0,0.0
+2022,town,ANG MO KIO,,1026,False,7.2,5.6,8.9
+2022,town,BEDOK,,1363,False,1.6,0.7,2.5
+2022,town,BISHAN,,465,False,21.6,18.9,24.3
+2022,town,BUKIT BATOK,,886,False,-9.3,-10.2,-8.3
+2022,town,BUKIT MERAH,,963,False,20.8,19.3,22.3
+2022,town,BUKIT PANJANG,,954,False,-19.4,-20.4,-18.4
+2022,town,BUKIT TIMAH,,62,False,29.9,25.4,34.6
+2022,town,CENTRAL AREA,,213,False,33.0,26.7,39.5
+2022,town,CHOA CHU KANG,,1404,False,-21.3,-21.9,-20.7
+2022,town,CLEMENTI,,610,False,12.5,11.0,14.0
+2022,town,GEYLANG,,683,False,9.0,7.3,10.8
+2022,town,HOUGANG,,1326,False,-5.1,-6.0,-4.1
+2022,town,JURONG EAST,,485,False,-6.4,-8.0,-4.8
+2022,town,JURONG WEST,,1655,False,-15.3,-16.1,-14.6
+2022,town,KALLANG/WHAMPOA,,927,False,14.0,12.4,15.7
+2022,town,MARINE PARADE,,194,False,23.3,20.4,26.3
+2022,town,PASIR RIS,,818,False,-7.8,-8.7,-6.8
+2022,town,PUNGGOL,,2005,False,-19.8,-20.6,-19.0
+2022,town,QUEENSTOWN,,754,False,20.7,19.0,22.4
+2022,town,SEMBAWANG,,790,False,-19.7,-20.5,-18.9
+2022,town,SENGKANG,,2299,False,-20.1,-20.9,-19.3
+2022,town,SERANGOON,,428,False,9.8,8.4,11.2
+2022,town,TAMPINES,,1704,False,-4.1,-5.0,-3.3
+2022,town,TOA PAYOH,,846,False,13.2,11.0,15.5
+2022,town,WOODLANDS,,1870,False,-19.8,-20.3,-19.2
+2022,town,YISHUN,,1990,False,-11.4,-12.1,-10.7
+2023,lease_band,under 50,1,907,False,-39.7,-40.6,-38.7
+2023,lease_band,50-60,2,4137,False,-31.6,-32.3,-30.9
+2023,lease_band,60-70,3,5988,False,-24.6,-25.2,-24.1
+2023,lease_band,70-80,4,5575,False,-18.6,-19.2,-18.1
+2023,lease_band,80-90,5,2205,False,-4.0,-5.0,-3.0
+2023,lease_band,90+,6,6942,True,0.0,0.0,0.0
+2023,mrt_band,0-400m,1,8072,False,14.9,13.9,16.0
+2023,mrt_band,400-800m,2,11097,False,9.7,8.8,10.6
+2023,mrt_band,800m-1.2km,3,4844,False,5.0,4.2,5.8
+2023,mrt_band,over 1.2km,4,1741,True,0.0,0.0,0.0
+2023,town,ANG MO KIO,,1045,False,5.6,3.9,7.3
+2023,town,BEDOK,,1310,False,1.4,0.5,2.4
+2023,town,BISHAN,,380,False,22.6,20.7,24.6
+2023,town,BUKIT BATOK,,1410,False,-9.6,-10.4,-8.8
+2023,town,BUKIT MERAH,,984,False,20.5,18.9,22.1
+2023,town,BUKIT PANJANG,,759,False,-19.1,-20.2,-18.0
+2023,town,BUKIT TIMAH,,46,False,34.0,27.7,40.5
+2023,town,CENTRAL AREA,,195,False,30.7,24.6,37.1
+2023,town,CHOA CHU KANG,,1137,False,-21.6,-22.1,-21.0
+2023,town,CLEMENTI,,565,False,11.8,10.2,13.4
+2023,town,GEYLANG,,635,False,7.5,5.9,9.1
+2023,town,HOUGANG,,1413,False,-5.6,-6.7,-4.4
+2023,town,JURONG EAST,,467,False,-7.2,-8.5,-5.8
+2023,town,JURONG WEST,,1561,False,-16.2,-16.9,-15.4
+2023,town,KALLANG/WHAMPOA,,782,False,13.6,12.0,15.1
+2023,town,MARINE PARADE,,144,False,20.3,17.5,23.1
+2023,town,PASIR RIS,,623,False,-6.2,-7.1,-5.3
+2023,town,PUNGGOL,,2084,False,-17.1,-17.8,-16.3
+2023,town,QUEENSTOWN,,599,False,19.2,17.4,21.0
+2023,town,SEMBAWANG,,1010,False,-19.2,-19.9,-18.4
+2023,town,SENGKANG,,1953,False,-18.5,-19.3,-17.7
+2023,town,SERANGOON,,420,False,9.2,7.8,10.7
+2023,town,TAMPINES,,1634,False,-3.5,-4.2,-2.8
+2023,town,TOA PAYOH,,720,False,13.7,11.8,15.5
+2023,town,WOODLANDS,,2056,False,-19.2,-19.8,-18.6
+2023,town,YISHUN,,1822,False,-11.8,-12.5,-11.1
+2024,lease_band,under 50,1,1303,False,-39.0,-40.0,-38.0
+2024,lease_band,50-60,2,5383,False,-29.9,-30.6,-29.3
+2024,lease_band,60-70,3,5379,False,-24.3,-24.9,-23.7
+2024,lease_band,70-80,4,6175,False,-18.3,-18.9,-17.7
+2024,lease_band,80-90,5,2779,False,-1.6,-2.5,-0.6
+2024,lease_band,90+,6,6813,True,0.0,0.0,0.0
+2024,mrt_band,0-400m,1,8768,False,14.1,13.1,15.2
+2024,mrt_band,400-800m,2,11512,False,9.2,8.3,10.1
+2024,mrt_band,800m-1.2km,3,5044,False,4.3,3.5,5.2
+2024,mrt_band,over 1.2km,4,2508,True,0.0,0.0,0.0
+2024,town,ANG MO KIO,,1060,False,3.3,2.0,4.6
+2024,town,BEDOK,,1316,False,0.0,-0.7,0.9
+2024,town,BISHAN,,382,False,24.5,22.7,26.4
+2024,town,BUKIT BATOK,,1732,False,-10.4,-11.0,-9.8
+2024,town,BUKIT MERAH,,1040,False,17.8,16.1,19.5
+2024,town,BUKIT PANJANG,,866,False,-18.5,-19.5,-17.6
+2024,town,BUKIT TIMAH,,62,False,34.1,29.4,38.9
+2024,town,CENTRAL AREA,,179,False,29.3,24.4,34.5
+2024,town,CHOA CHU KANG,,1284,False,-22.3,-22.9,-21.8
+2024,town,CLEMENTI,,554,False,7.1,5.0,9.2
+2024,town,GEYLANG,,665,False,9.4,7.2,11.6
+2024,town,HOUGANG,,1467,False,-5.0,-6.2,-3.8
+2024,town,JURONG EAST,,566,False,-8.8,-10.1,-7.6
+2024,town,JURONG WEST,,1961,False,-17.5,-18.2,-16.8
+2024,town,KALLANG/WHAMPOA,,924,False,14.5,12.6,16.5
+2024,town,MARINE PARADE,,142,False,23.1,20.2,26.1
+2024,town,PASIR RIS,,683,False,-6.0,-6.7,-5.2
+2024,town,PUNGGOL,,2027,False,-16.0,-16.8,-15.2
+2024,town,QUEENSTOWN,,698,False,17.1,15.0,19.3
+2024,town,SEMBAWANG,,1010,False,-18.5,-19.3,-17.7
+2024,town,SENGKANG,,2118,False,-17.8,-18.5,-17.0
+2024,town,SERANGOON,,440,False,11.4,10.0,12.9
+2024,town,TAMPINES,,1961,False,-0.9,-1.7,-0.0
+2024,town,TOA PAYOH,,808,False,14.3,12.3,16.3
+2024,town,WOODLANDS,,2042,False,-18.5,-19.1,-17.9
+2024,town,YISHUN,,1845,False,-10.8,-11.5,-10.1
+2025,lease_band,under 50,1,1512,False,-40.0,-41.1,-38.9
+2025,lease_band,50-60,2,5576,False,-30.3,-31.0,-29.6
+2025,lease_band,60-70,3,4134,False,-24.7,-25.4,-24.0
+2025,lease_band,70-80,4,5279,False,-18.6,-19.2,-17.9
+2025,lease_band,80-90,5,3418,False,-2.5,-3.4,-1.5
+2025,lease_band,90+,6,5166,True,0.0,0.0,0.0
+2025,mrt_band,0-400m,1,7832,False,16.7,15.6,17.8
+2025,mrt_band,400-800m,2,10302,False,11.0,10.0,11.9
+2025,mrt_band,800m-1.2km,3,4758,False,5.7,4.9,6.6
+2025,mrt_band,over 1.2km,4,2193,True,0.0,0.0,0.0
+2025,town,ANG MO KIO,,971,False,1.9,0.7,3.1
+2025,town,BEDOK,,1207,False,0.3,-0.6,1.2
+2025,town,BISHAN,,376,False,24.0,22.4,25.6
+2025,town,BUKIT BATOK,,1304,False,-10.9,-11.5,-10.2
+2025,town,BUKIT MERAH,,933,False,18.2,16.4,19.9
+2025,town,BUKIT PANJANG,,798,False,-19.6,-20.7,-18.5
+2025,town,BUKIT TIMAH,,54,False,33.9,29.7,38.3
+2025,town,CENTRAL AREA,,172,False,29.9,24.5,35.5
+2025,town,CHOA CHU KANG,,1027,False,-22.8,-23.3,-22.3
+2025,town,CLEMENTI,,552,False,6.4,3.8,9.0
+2025,town,GEYLANG,,639,False,8.0,6.4,9.6
+2025,town,HOUGANG,,1313,False,-4.8,-6.1,-3.5
+2025,town,JURONG EAST,,482,False,-9.5,-10.8,-8.1
+2025,town,JURONG WEST,,1591,False,-17.3,-18.2,-16.5
+2025,town,KALLANG/WHAMPOA,,794,False,12.8,11.4,14.4
+2025,town,MARINE PARADE,,162,False,29.0,26.0,32.2
+2025,town,PASIR RIS,,634,False,-5.5,-6.2,-4.8
+2025,town,PUNGGOL,,1538,False,-16.8,-17.5,-16.1
+2025,town,QUEENSTOWN,,605,False,17.5,15.1,20.1
+2025,town,SEMBAWANG,,1191,False,-18.4,-19.3,-17.5
+2025,town,SENGKANG,,1905,False,-17.6,-18.4,-16.8
+2025,town,SERANGOON,,402,False,14.0,12.5,15.6
+2025,town,TAMPINES,,1921,False,-0.1,-0.9,0.6
+2025,town,TOA PAYOH,,1063,False,14.5,12.2,16.8
+2025,town,WOODLANDS,,1748,False,-19.1,-19.7,-18.4
+2025,town,YISHUN,,1703,False,-11.2,-11.9,-10.4
+2026,lease_band,under 50,1,1199,False,-43.8,-44.9,-42.7
+2026,lease_band,50-60,2,3995,False,-32.9,-33.6,-32.1
+2026,lease_band,60-70,3,3112,False,-26.8,-27.5,-26.0
+2026,lease_band,70-80,4,3449,False,-20.4,-21.2,-19.7
+2026,lease_band,80-90,5,2860,False,-4.1,-5.1,-3.1
+2026,lease_band,90+,6,3392,True,0.0,0.0,0.0
+2026,mrt_band,0-400m,1,5664,False,17.3,16.2,18.4
+2026,mrt_band,400-800m,2,7471,False,11.4,10.5,12.3
+2026,mrt_band,800m-1.2km,3,3255,False,6.2,5.3,7.1
+2026,mrt_band,over 1.2km,4,1617,True,0.0,0.0,0.0
+2026,town,ANG MO KIO,,620,False,3.2,1.2,5.1
+2026,town,BEDOK,,953,False,0.7,-0.5,2.0
+2026,town,BISHAN,,285,False,22.7,20.8,24.6
+2026,town,BUKIT BATOK,,1040,False,-13.2,-13.9,-12.5
+2026,town,BUKIT MERAH,,663,False,18.9,17.0,20.8
+2026,town,BUKIT PANJANG,,569,False,-21.4,-22.4,-20.3
+2026,town,BUKIT TIMAH,,40,False,36.1,32.3,40.0
+2026,town,CENTRAL AREA,,130,False,30.9,25.4,36.7
+2026,town,CHOA CHU KANG,,756,False,-23.9,-24.5,-23.3
+2026,town,CLEMENTI,,364,False,7.5,4.7,10.3
+2026,town,GEYLANG,,474,False,10.2,8.2,12.4
+2026,town,HOUGANG,,898,False,-4.6,-5.7,-3.4
+2026,town,JURONG EAST,,341,False,-10.8,-12.3,-9.3
+2026,town,JURONG WEST,,1073,False,-18.7,-19.6,-17.8
+2026,town,KALLANG/WHAMPOA,,527,False,15.0,13.1,17.0
+2026,town,MARINE PARADE,,91,False,37.2,32.5,42.0
+2026,town,PASIR RIS,,560,False,-4.7,-5.6,-3.8
+2026,town,PUNGGOL,,1220,False,-18.4,-19.2,-17.6
+2026,town,QUEENSTOWN,,560,False,21.7,19.0,24.5
+2026,town,SEMBAWANG,,609,False,-21.0,-21.9,-20.1
+2026,town,SENGKANG,,1273,False,-19.8,-20.6,-18.9
+2026,town,SERANGOON,,258,False,14.8,12.9,16.8
+2026,town,TAMPINES,,1500,False,-0.3,-1.0,0.5
+2026,town,TOA PAYOH,,686,False,15.2,13.1,17.4
+2026,town,WOODLANDS,,1356,False,-19.9,-20.6,-19.1
+2026,town,YISHUN,,1161,False,-13.2,-14.0,-12.4
