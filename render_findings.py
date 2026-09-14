@@ -62,6 +62,20 @@ _MODEL_VS_NAIVE = [
     ("95% interval", interval("model_ci_low_pct", "model_ci_high_pct")),
 ]
 
+def _share(v):
+    return f"{v:.1f}%"
+
+
+VERDICTS = ["above", "below", "in line", "not enough sales"]
+
+_FAIR_VALUE = [
+    ("Block", col("address", str)),
+    ("Town", col("town", str)),
+    ("Sales", col("sales", _count)),
+    ("vs model", col("premium_pct", _pct)),
+    ("95% interval", interval("ci_low_pct", "ci_high_pct")),
+]
+
 # Marker name -> the published mart it reads, an optional row filter, and its columns as
 # (header, cell) pairs. Headers and number formats live here, not in the mart: the mart
 # stays plain numbers any tool can read, and the document decides how a reader sees them.
@@ -94,6 +108,39 @@ TABLES = {
             ("0-400m vs over 1.2km", col("effect_pct", _pct)),
             ("95% interval", interval("ci_low_pct", "ci_high_pct")),
         ],
+    },
+    "model_validation": {
+        "mart": "mart_model_validation",
+        "columns": [
+            ("Year", col("scope", str)),
+            ("Unseen sales", col("test_sales", _count)),
+            ("Model: median miss", col("model_median_error_pct", _share)),
+            ("Guess: median miss", col("baseline_median_error_pct", _share)),
+            ("Model: within 10%", col("model_within_10pct", _share)),
+            ("Guess: within 10%", col("baseline_within_10pct", _share)),
+        ],
+    },
+    "fair_value_verdicts": {
+        "mart": "mart_block_fair_value",
+        "rows": lambda df: (
+            df.groupby("verdict").agg(blocks=("block_key", "size"), sales=("sales", "sum"))
+            .reset_index().sort_values("verdict", key=lambda v: v.map(VERDICTS.index))
+        ),
+        "columns": [
+            ("Verdict", col("verdict", str)),
+            ("Blocks", col("blocks", _count)),
+            ("Their sales", col("sales", _count)),
+        ],
+    },
+    "fair_value_above": {
+        "mart": "mart_block_fair_value",
+        "rows": lambda df: df[df["verdict"] == "above"].nlargest(10, "premium_pct"),
+        "columns": _FAIR_VALUE,
+    },
+    "fair_value_below": {
+        "mart": "mart_block_fair_value",
+        "rows": lambda df: df[df["verdict"] == "below"].nsmallest(10, "premium_pct"),
+        "columns": _FAIR_VALUE,
     },
     "price_index_by_year": {
         "mart": "mart_price_index",
