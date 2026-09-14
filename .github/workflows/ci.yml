@@ -46,3 +46,10 @@ jobs:
 
       - name: FINDINGS.md matches the committed edition
         run: python render_findings.py --check
+
+      # The Explore page recomputes the descriptive figures in pandas; unfiltered, they
+      # must equal the SQL marts. Checked on the edition CI just built and the committed one.
+      - name: Explore matches the published marts
+        run: |
+          python check_explore_parity.py --edition data/fixture/published
+          python check_explore_parity.py
