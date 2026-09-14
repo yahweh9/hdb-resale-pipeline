@@ -91,7 +91,7 @@ tables.
 | `models/analysis/hedonic_sales.sql` | Model input: one row per sale with every band the model uses. |
 | `models/analysis/hedonic_coefficients.py` | dbt Python model: reads `hedonic_sales`, calls `fit_hedonic`. |
 | `models/analysis/_analysis_models.yml` | Column tests. |
-| `tests/dbt/assert_hedonic_references.sql` | One zero-effect reference per term; town effects average to zero. |
+| `tests/dbt/assert_hedonic_coefficients_are_well_formed.sql` | One zero-effect reference per term; towns average to zero; level counts reconcile to the input. |
 | `profiles.yml` | `module_paths: ["."]`, so the dbt Python model can import `hedonic`. |
 | `requirements.txt` | Add `statsmodels`; drop the unused `scikit-learn` and its stale comment. |
 
