@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: mart_mrt_premium_by_band
+    description: >
+      Grain: one row per MRT distance band. Naive median price per sqm by band, and
+      each band's premium over the farthest. Published to the edition and FINDINGS.md.
+    columns:
+      - name: band_order
+        data_tests: [unique, not_null]
+      - name: mrt_band
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["0-400m", "400-800m", "800m-1.2km", "over 1.2km"]
+      - name: sales
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: median_price_psm
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
