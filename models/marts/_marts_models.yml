@@ -57,3 +57,21 @@ models:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [calendar_year, term, level]
+
+  - name: mart_model_validation
+    description: "Grain: one row per year plus 'All years'. Out-of-sample error, model against baseline."
+    columns:
+      - name: scope
+        data_tests: [unique, not_null]
+
+  - name: mart_block_fair_value
+    description: "Grain: one row per block with a sale in the window. Premium over the model and a verdict."
+    columns:
+      - name: block_key
+        data_tests: [unique, not_null]
+      - name: verdict
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["above", "below", "in line", "not enough sales"]
