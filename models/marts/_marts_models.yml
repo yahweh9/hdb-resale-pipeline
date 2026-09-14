@@ -75,3 +75,45 @@ models:
           - accepted_values:
               arguments:
                 values: ["above", "below", "in line", "not enough sales"]
+
+  - name: mart_cbd_gradient
+    description: "Grain: one row per whole km from the CBD with 200+ sales (finding 1)."
+    columns:
+      - name: km_from_cbd
+        data_tests: [unique, not_null]
+
+  - name: mart_mrt_premium_by_cbd_ring
+    description: "Grain: one row per CBD ring. Near-MRT premium within the ring (finding 2)."
+    columns:
+      - name: cbd_ring
+        data_tests: [unique, not_null]
+
+  - name: mart_storey_premium
+    description: "Grain: one row per floor tier. Naive 4-room and town/type/year-controlled premiums (finding 3)."
+    columns:
+      - name: floor_tier
+        data_tests: [unique, not_null]
+
+  - name: mart_lease_4room
+    description: "Grain: one row per coarse lease band, 4-room only (finding 4)."
+    columns:
+      - name: lease_band
+        data_tests: [unique, not_null]
+
+  - name: mart_price_by_year
+    description: "Grain: one row per year. Median psm and the mature/non-mature gap (finding 5)."
+    columns:
+      - name: calendar_year
+        data_tests: [unique, not_null]
+
+  - name: mart_large_flat_share
+    description: "Grain: one row per region. Large-flat share of sales in 2017, 2021 and the latest year (finding 6)."
+    columns:
+      - name: region
+        data_tests: [unique, not_null]
+
+  - name: mart_town_ranking
+    description: "Grain: one row per town. Naive median psm beside the model's town effect."
+    columns:
+      - name: town
+        data_tests: [unique, not_null]

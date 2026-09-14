@@ -7,6 +7,32 @@
     40 years has only ~55 sales, so it is folded into "under 50".
 #}
 
+{#
+    Finding 4's descriptive grouping, in 20-year bands. It predates the model, and its
+    prose ("second most expensive", "less than half as far from the CBD as every other
+    band") is true of these bands and not of the model's 10-year ones, so it is kept as a
+    named grouping rather than silently redrawn. "under 50" is identical in both.
+#}
+{% macro lease_band_coarse(remaining_lease_months) -%}
+    case
+        when {{ remaining_lease_months }} is null then null
+        when {{ remaining_lease_months }} < 600  then 'under 50'
+        when {{ remaining_lease_months }} < 840  then '50-70'
+        when {{ remaining_lease_months }} < 1080 then '70-90'
+        else '90+'
+    end
+{%- endmacro %}
+
+{% macro lease_band_coarse_order(remaining_lease_months) -%}
+    case
+        when {{ remaining_lease_months }} is null then null
+        when {{ remaining_lease_months }} < 600  then 1
+        when {{ remaining_lease_months }} < 840  then 2
+        when {{ remaining_lease_months }} < 1080 then 3
+        else 4
+    end
+{%- endmacro %}
+
 {% macro lease_band_order(remaining_lease_months) -%}
     case
         when {{ remaining_lease_months }} is null then null
