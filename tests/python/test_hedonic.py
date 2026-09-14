@@ -22,11 +22,13 @@ LEASE = {"under 50": np.log(0.85), "50-60": np.log(0.90), "60-70": np.log(0.93),
          "70-80": np.log(0.96), "80-90": np.log(0.98), "90+": 0.0}
 FLOOR = {"Low (1-4)": 0.0, "Mid (5-9)": 0.03, "High (10-19)": 0.08, "Ultra-High (20+)": 0.30}
 FLAT = {"3 ROOM": 0.05, "4 ROOM": 0.0, "5 ROOM": -0.03}
-MONTHS = [f"2024-{m:02d}" for m in range(1, 13)] + [f"2025-{m:02d}" for m in range(1, 13)]
+def month_labels(n):
+    return [f"{2017 + i // 12}-{i % 12 + 1:02d}" for i in range(n)]
 
 
-def market(seed=0, n_blocks=400, sales_per_block=8, drop=None):
+def market(seed=0, n_blocks=400, sales_per_block=8, drop=None, n_months=24):
     """Synthetic sales with known effects. `drop` = (term, level) removes that level."""
+    MONTHS = month_labels(n_months)
     rng = np.random.default_rng(seed)
 
     def pick(options, size, p=None):
@@ -105,12 +107,24 @@ def test_each_other_term_has_exactly_one_zero_effect_reference(fit):
 
     assert sorted(refs["term"]) == sorted(["mrt_band", "lease_band", "floor_tier", "flat_type", "month"])
     assert (refs["estimate"] == 0).all()
-    assert set(refs["level"]) >= {"over 1.2km", "90+", "Low (1-4)", "4 ROOM", "2024-01"}
+    assert set(refs["level"]) >= {"over 1.2km", "90+", "Low (1-4)", "4 ROOM", "2017-01"}
 
 
 def test_the_month_terms_track_the_planted_trend(fit):
     # 0.5% a month for 23 months after the reference month.
-    assert effect(fit, "month", "2025-12")["estimate"] == pytest.approx(0.005 * 23, abs=0.015)
+    assert effect(fit, "month", "2018-12")["estimate"] == pytest.approx(0.005 * 23, abs=0.015)
+
+
+def test_a_design_wider_than_127_columns_keeps_every_month():
+    # The real warehouse has 117 months, ~160 columns in all. Category codes come back
+    # as int8 (up to 127 categories), and column arithmetic on them wrapped past 127:
+    # every month from Mar 2024 was written into the wrong column and fitted as zero.
+    # 24 months never reached the edge. 120 months stays int8 and crosses it.
+    coefs = hedonic.fit_hedonic(market(n_blocks=800, n_months=120))
+    months = coefs[coefs["term"] == "month"].set_index("level")
+
+    assert len(months) == 120
+    assert months.loc["2026-12", "estimate"] == pytest.approx(0.005 * 119, abs=0.03)
 
 
 def test_every_interval_contains_its_estimate_and_has_width(fit):
@@ -125,6 +139,17 @@ def test_sales_counts_add_up_to_the_input(fit):
     n = len(market())
     for term, rows in fit.groupby("term"):
         assert rows["sales"].sum() == n, term
+
+
+def test_a_rank_deficient_design_fails_instead_of_returning_arbitrary_numbers():
+    # If every block's station band is fixed by its town, the model cannot tell town
+    # from station apart. statsmodels would fit anyway -- with a warning nobody reads
+    # and coefficients that are one arbitrary solution among infinitely many.
+    sales = market()
+    sales["mrt_band"] = sales["town"].map({"EAST": "0-400m", "MID": "400-800m", "WEST": "over 1.2km"})
+
+    with pytest.raises(ValueError, match="rank"):
+        hedonic.fit_hedonic(sales)
 
 
 def test_an_empty_band_is_left_out_rather_than_crashing():

@@ -71,7 +71,10 @@ def fit_hedonic(sales):
     X = np.zeros((n, width))
     X[:, 0] = 1.0
     for term, levels, _, start in layout:
-        codes = pd.Categorical(df[term], categories=levels).codes
+        # int64 on purpose: pandas hands back int8 codes for up to 127 levels, and
+        # `start + code` in int8 wraps past 127 -- which put every month from Mar 2024
+        # into the wrong column once the design grew past 127 columns.
+        codes = pd.Categorical(df[term], categories=levels).codes.astype(np.int64)
         free = codes > 0
         X[np.flatnonzero(free), start + codes[free] - 1] = 1.0
 
@@ -81,6 +84,14 @@ def fit_hedonic(sales):
     # block counting as 40 independent pieces of evidence.
     groups = pd.factorize(df["block_key"])[0]
     result = sm.OLS(y, X).fit(cov_type="cluster", cov_kwds={"groups": groups})
+    # A rank-deficient design still "fits": statsmodels warns and returns one arbitrary
+    # solution among infinitely many. That is how an int8 overflow once zeroed 31 month
+    # columns and produced a plausible-looking table. Wrong numbers must not be quiet.
+    if result.model.rank < width:
+        raise ValueError(
+            f"Design matrix is rank-deficient ({result.model.rank} of {width} columns "
+            "independent): two terms cannot be told apart in this data."
+        )
     params, cov = np.asarray(result.params), np.asarray(result.cov_params())
 
     rows = []
