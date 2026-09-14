@@ -22,6 +22,8 @@ LEASE = {"under 50": np.log(0.85), "50-60": np.log(0.90), "60-70": np.log(0.93),
          "70-80": np.log(0.96), "80-90": np.log(0.98), "90+": 0.0}
 FLOOR = {"Low (1-4)": 0.0, "Mid (5-9)": 0.03, "High (10-19)": 0.08, "Ultra-High (20+)": 0.30}
 FLAT = {"3 ROOM": 0.05, "4 ROOM": 0.0, "5 ROOM": -0.03}
+
+
 def month_labels(n):
     return [f"{2017 + i // 12}-{i % 12 + 1:02d}" for i in range(n)]
 
@@ -166,3 +168,34 @@ def test_a_missing_reference_falls_back_to_the_most_common_level():
     mrt = coefs[coefs["term"] == "mrt_band"]
     assert mrt["is_reference"].sum() == 1
     assert "over 1.2km" not in set(mrt["level"])
+
+
+# --- One fit per calendar year ------------------------------------------------------
+
+
+def test_fitting_by_year_recovers_the_effect_in_every_year():
+    # 24 months spans 2017 and 2018; each year gets its own fit and its own answer.
+    coefs = hedonic.fit_by_year(market(n_blocks=800))
+
+    assert sorted(coefs["calendar_year"].unique()) == [2017, 2018]
+    for year, fit in coefs.groupby("calendar_year"):
+        assert effect(fit, "mrt_band", "0-400m")["effect_pct"] == pytest.approx(
+            100 * np.expm1(MRT["0-400m"]), abs=2.5
+        ), year
+
+
+def test_each_year_is_measured_against_its_own_first_month():
+    coefs = hedonic.fit_by_year(market(n_blocks=800))
+    refs = coefs[(coefs["term"] == "month") & coefs["is_reference"]]
+
+    assert dict(zip(refs["calendar_year"], refs["level"])) == {2017: "2017-01", 2018: "2018-01"}
+
+
+def test_a_year_too_thin_to_identify_is_skipped_not_guessed():
+    sales = market(n_blocks=800)
+    thin = pd.concat([sales[sales["transaction_month"] < "2018"],
+                      sales[sales["transaction_month"] >= "2018"].head(10)])
+
+    coefs = hedonic.fit_by_year(thin)
+
+    assert sorted(coefs["calendar_year"].unique()) == [2017]

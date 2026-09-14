@@ -31,6 +31,10 @@ REFERENCES = {
 Z95 = 1.959964
 
 
+class RankDeficientError(ValueError):
+    """The data cannot tell two terms apart, so no coefficient in the fit means anything."""
+
+
 def _reference(values, term):
     """The reference level for a term, falling back when the preferred one has no sales.
 
@@ -88,7 +92,7 @@ def fit_hedonic(sales):
     # solution among infinitely many. That is how an int8 overflow once zeroed 31 month
     # columns and produced a plausible-looking table. Wrong numbers must not be quiet.
     if result.model.rank < width:
-        raise ValueError(
+        raise RankDeficientError(
             f"Design matrix is rank-deficient ({result.model.rank} of {width} columns "
             "independent): two terms cannot be told apart in this data."
         )
@@ -121,6 +125,34 @@ def fit_hedonic(sales):
                 "ci_high_pct": 100 * np.expm1(estimate + Z95 * std_error),
             })
     return pd.DataFrame(rows)
+
+
+def fit_by_year(sales):
+    """The same model fitted separately to each calendar year, stacked with a year column.
+
+    One all-years fit assumes every effect held still for a decade; the mature-estate gap
+    alone went 23% -> 6% -> 11% (finding 5). A fit per year lets the effects move. Each
+    year's months are measured against that year's own first month.
+
+    A year the data cannot identify -- too few sales for the number of terms, as in the
+    CI fixture -- is skipped rather than fitted to arbitrary numbers. Whether a year
+    SHOULD have been fitted is a question about the data, so the dbt build asks it, not
+    this function.
+    """
+    years = sales["transaction_month"].str[:4].astype(int)
+    fits = []
+    for year in sorted(years.unique()):
+        try:
+            coefs = fit_hedonic(sales[years == year])
+        except RankDeficientError:
+            continue
+        fits.append(coefs.assign(calendar_year=year))
+    if not fits:
+        return pd.DataFrame(columns=["calendar_year", "term", "level", "is_reference", "sales",
+                                     "estimate", "std_error", "effect_pct", "ci_low_pct",
+                                     "ci_high_pct"])
+    stacked = pd.concat(fits, ignore_index=True)
+    return stacked[["calendar_year"] + [c for c in stacked.columns if c != "calendar_year"]]
 
 
 def _town_contrasts(levels, start, width):
