@@ -1,8 +1,13 @@
-"""Streamlit dashboard over the gold star schema.
+"""Streamlit dashboard over the published edition.
 
-Reads the DuckDB warehouse dbt builds -- never bronze, never the API. Every figure
-on the page is a query against fact_resale_txn joined to its four dimensions, which
-is the point: if the star schema is awkward to query, it shows up here first.
+Reads published/ -- never the warehouse, never bronze, never the API. The edition is
+what publish_edition.py exported from the gold star and the marts, stamped with its
+data cut, so this page shows exactly the numbers FINDINGS.md quotes and runs on a host
+that has never seen the pipeline.
+
+Two kinds of figure live here. Published figures come straight from a mart and ignore
+the sidebar: they are the numbers the findings stand behind. Exploratory figures are
+recomputed from every sale under whatever filters are chosen.
 
     streamlit run dashboard.py
 """
@@ -10,36 +15,9 @@ is the point: if the star schema is awkward to query, it shows up here first.
 import os
 
 import altair as alt
-import duckdb
-import pandas as pd
 import streamlit as st
 
-WAREHOUSE = os.getenv("DUCKDB_PATH", "data/warehouse.duckdb")
-
-# One join per dimension, no nesting. A star schema earns its redundancy here.
-STAR_QUERY = """
-select
-    d.transaction_month,
-    d.calendar_year,
-    t.town,
-    t.region,
-    t.is_mature_estate,
-    f.flat_type,
-    f.floor_tier,
-    b.dist_to_nearest_mrt_km,
-    b.dist_to_cbd_km,
-    b.is_near_mrt,
-    x.resale_price,
-    x.price_psm,
-    x.floor_area_sqm,
-    x.remaining_lease_months,
-    x._ingested_at
-from gold.fact_resale_txn x
-join gold.dim_date  d using (date_key)
-join gold.dim_town  t using (town_key)
-join gold.dim_flat  f using (flat_key)
-join gold.dim_block b using (block_key)
-"""
+import edition
 
 FLAT_TYPE_ORDER = ["1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM",
                    "EXECUTIVE", "MULTI GENERATION"]
@@ -81,11 +59,16 @@ def style(chart):
     )
 
 
-@st.cache_data(show_spinner="Reading the warehouse...")
-def load_star():
-    """Materialise the star once. 240k rows is small enough to filter in memory."""
-    with duckdb.connect(WAREHOUSE, read_only=True) as con:
-        return con.execute(STAR_QUERY).df()
+@st.cache_data(show_spinner="Reading the edition...")
+def load_sales():
+    """Every sale, once. 240k rows is small enough to filter in memory."""
+    return edition.read_sales()
+
+
+@st.cache_data
+def load_published():
+    """The stamp and the published marts. Small, and never filtered."""
+    return edition.read_stamp(), edition.read_table("mart_mrt_premium_by_band")
 
 
 def kpi_row(df):
@@ -203,8 +186,12 @@ def cbd_gradient(df):
     )
 
 
-def mrt_premium(df):
-    """Median price per sqm by walking distance to the nearest station.
+def mrt_premium(bands):
+    """Median price per sqm by distance to the nearest station, from the published mart.
+
+    A published figure: it charts mart_mrt_premium_by_band as-is and ignores the
+    sidebar, so it always matches the table in FINDINGS.md. The bands are defined once,
+    in dim_block; this function never re-derives them.
 
     Banded rather than continuous: the row-level relationship is noisy, and 400m is
     the threshold HDB and URA use for walkability, so it is the cut people already
@@ -214,29 +201,21 @@ def mrt_premium(df):
     value; colouring the bands by their own position would encode the same thing a
     third time.
     """
-    banded = df.assign(
-        band=pd.cut(
-            df["dist_to_nearest_mrt_km"],
-            bins=[0, 0.4, 0.8, 1.2, 2.0, 99],
-            labels=["under 400m", "400-800m", "800m-1.2km", "1.2-2km", "over 2km"],
-        )
-    )
-    summary = banded.groupby("band", as_index=False, observed=True).agg(
-        price_psm=("price_psm", "median"), n=("price_psm", "size")
-    )
+    order = bands.sort_values("band_order")["mrt_band"].tolist()
     return style(
-        alt.Chart(summary)
+        alt.Chart(bands)
         .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4,
                   color=PRIMARY, width={"band": 0.75})
         .encode(
-            x=alt.X("band:N", title="Walking distance to nearest MRT/LRT", sort=None,
+            x=alt.X("mrt_band:N", title="Distance to nearest MRT/LRT", sort=order,
                     axis=alt.Axis(labelAngle=0)),
-            y=alt.Y("price_psm:Q", title="Median price per sqm (SGD)",
+            y=alt.Y("median_price_psm:Q", title="Median price per sqm (SGD)",
                     scale=alt.Scale(zero=False)),
             tooltip=[
-                alt.Tooltip("band:N", title="Distance"),
-                alt.Tooltip("price_psm:Q", title="Median psm", format="$,.0f"),
-                alt.Tooltip("n:Q", title="Sales", format=","),
+                alt.Tooltip("mrt_band:N", title="Distance"),
+                alt.Tooltip("median_price_psm:Q", title="Median psm", format="$,.0f"),
+                alt.Tooltip("premium_vs_farthest_pct:Q", title="vs over 1.2km (%)", format="+.1f"),
+                alt.Tooltip("sales:Q", title="Sales", format=","),
             ],
         )
         .properties(height=280)
@@ -342,16 +321,18 @@ def main():
     st.set_page_config(page_title="HDB Resale Prices", page_icon="*", layout="wide")
     st.title("HDB resale prices")
 
-    if not os.path.exists(WAREHOUSE):
-        st.error(f"No warehouse at {WAREHOUSE}. Build one first:")
+    if not os.path.exists(os.path.join(edition.EDITION_DIR, edition.STAMP_FILE)):
+        st.error(f"No published edition in {edition.EDITION_DIR}/. Publish one first:")
         st.code(
             """python ingest_hdb.py --full
-dbt deps && dbt build""",
+dbt deps && dbt build
+python publish_edition.py""",
             language="bash",
         )
         st.stop()
 
-    df = load_star()
+    df = load_sales()
+    stamp, mrt_bands = load_published()
 
     with st.sidebar:
         st.header("Filters")
@@ -397,7 +378,12 @@ dbt deps && dbt build""",
         )
 
         st.subheader("MRT proximity premium")
-        st.altair_chart(mrt_premium(filtered), use_container_width=True)
+        st.altair_chart(mrt_premium(mrt_bands), use_container_width=True)
+        st.caption(
+            "Published figure: every sale in the edition, unaffected by the filters. "
+            "Naive, not controlled -- station proximity is entangled with distance "
+            "to the CBD (see FINDINGS.md, finding 2)."
+        )
 
         st.subheader("Transaction volume")
         st.altair_chart(volume_chart(filtered), use_container_width=True)
@@ -432,11 +418,10 @@ dbt deps && dbt build""",
             },
         )
 
-    ingested = pd.to_datetime(df["_ingested_at"]).max()
     st.caption(
-        f"{len(df):,} transactions in the warehouse, "
-        f"{df['transaction_month'].min():%b %Y} to {df['transaction_month'].max():%b %Y}. "
-        f"Bronze last ingested {ingested:%Y-%m-%d %H:%M} UTC. "
+        f"Edition: {stamp['sales']:,} transactions, "
+        f"{df['transaction_month'].min():%b %Y} to {df['transaction_month'].max():%b %Y}, "
+        f"published {stamp['published_on']}. "
         "Source: data.gov.sg."
     )
 

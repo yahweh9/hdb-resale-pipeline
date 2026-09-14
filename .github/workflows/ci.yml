@@ -36,3 +36,13 @@ jobs:
         run: |
           dbt deps
           dbt build --vars '{bronze_glob: "data/fixture/hdb_resale/month=*/*.parquet"}'
+
+      # Publishes the fixture warehouse into a throwaway directory. The point is the
+      # export against a real dbt build -- every published mart exists and has the
+      # columns the edition expects. It never writes to published/: only a deliberate
+      # local publish changes what the dashboard and FINDINGS.md show.
+      - name: Publish a smoke-test edition from the fixture
+        run: python publish_edition.py --out data/fixture/published
+
+      - name: FINDINGS.md matches the committed edition
+        run: python render_findings.py --check
