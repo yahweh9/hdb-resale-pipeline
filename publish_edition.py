@@ -34,6 +34,13 @@ MART_TABLES = [
     "mart_effects_by_year",
     "mart_model_validation",
     "mart_block_fair_value",
+    "mart_cbd_gradient",
+    "mart_mrt_premium_by_cbd_ring",
+    "mart_storey_premium",
+    "mart_lease_4room",
+    "mart_price_by_year",
+    "mart_large_flat_share",
+    "mart_town_ranking",
 ]
 
 # One join per dimension -- the star the dashboard used to query directly. The ingest
@@ -49,6 +56,8 @@ select
     f.flat_type,
     f.floor_tier,
     b.dist_to_nearest_mrt_km,
+    b.mrt_band,
+    b.mrt_band_order,
     b.dist_to_cbd_km,
     b.is_near_mrt,
     x.resale_price,
