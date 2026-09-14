@@ -1,14 +1,14 @@
 /*
-    Grain: one row per coarse lease band, 4-room flats only (finding 4).
+    Grain: one row per lease band, 4-room flats only (finding 4).
 
     The naive lease table and the confound behind it: the shortest leases look dear
-    because they sit close to the CBD, in mature estates. Uses finding 4's 20-year bands
-    (lease_band_coarse) -- see the macro for why they are kept.
+    because they sit close to the CBD, in mature estates. The same bands as the hedonic
+    model, so the naive table and the model's before/after table in finding 4 line up.
 */
 
 select
-    {{ lease_band_coarse_order('x.remaining_lease_months') }} as band_order,
-    {{ lease_band_coarse('x.remaining_lease_months') }}       as lease_band,
+    {{ lease_band_order('x.remaining_lease_months') }} as band_order,
+    {{ lease_band('x.remaining_lease_months') }}       as lease_band,
     count(*)                                                  as sales,
     round(median(x.price_psm), 0)                             as median_price_psm,
     round(median(b.dist_to_cbd_km), 1)                        as median_km_to_cbd,

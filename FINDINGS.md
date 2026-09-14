@@ -203,14 +203,17 @@ grouped naively for 4-room flats, says otherwise:
 <!-- table: lease_naive_4room -->
 | Remaining lease (years) | Median psm | Sales |
 |---|---|---|
+| 80-90 | S$6,413 | 16,150 |
 | 90+ | S$6,129 | 30,271 |
 | under 50 | S$5,945 | 638 |
-| 70-90 | S$5,336 | 37,522 |
-| 50-70 | S$4,911 | 33,602 |
+| 50-60 | S$5,357 | 10,220 |
+| 70-80 | S$4,946 | 21,372 |
+| 60-70 | S$4,709 | 23,382 |
 <!-- /table -->
 
-The shortest leases come **second most expensive**, above two bands with far more
-lease left. Taken at face value this says lease decay does not exist, which is false.
+The shortest leases come **third most expensive**, above three bands with more lease
+left, and 80–90 year leases sell for more than 90+. Taken at face value this says lease
+decay does not exist, which is false.
 
 It is a confound, and it is measurable:
 
@@ -218,14 +221,18 @@ It is a confound, and it is measurable:
 | Remaining lease (years) | Median km to CBD | % in mature estates | Sales |
 |---|---|---|---|
 | under 50 | 6.2 km | 93% | 638 |
-| 50-70 | 12.2 km | 54% | 33,602 |
-| 70-90 | 14.2 km | 30% | 37,522 |
+| 50-60 | 10.0 km | 76% | 10,220 |
+| 60-70 | 13.6 km | 45% | 23,382 |
+| 70-80 | 14.7 km | 29% | 21,372 |
+| 80-90 | 13.2 km | 31% | 16,150 |
 | 90+ | 14.2 km | 25% | 30,271 |
 <!-- /table -->
 
-Flats with under 50 years left sit **less than half as far from the CBD** as every
-other band, and 93% of them are in mature estates. They are the oldest flats in
-Singapore, and the oldest estates are the central ones. The five towns supplying most
+Flats with under 50 years left sit **less than half as far from the CBD** as any band
+with 60 or more years left, and 93% of them are in mature estates. It is a gradient, not
+an outlier: from 70–80 years down to under 50, the median distance to the CBD falls from
+14.7km to 6.2km and the share in mature estates rises from 29% to 93%. The oldest flats
+are in the oldest estates, and the oldest estates are the central ones. The five towns supplying most
 of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa, Queenstown and Marine
 Parade — every one of them central and mature.
 

@@ -84,8 +84,7 @@ and what is exploratory.
 
 | File | Responsibility |
 |---|---|
-| `models/marts/mart_cbd_gradient.sql`, `mart_mrt_premium_by_cbd_ring.sql`, `mart_storey_premium.sql`, `mart_lease_4room.sql`, `mart_price_by_year.sql`, `mart_large_flat_share.sql`, `mart_town_ranking.sql` | The descriptive figures behind findings 1-6 and the Findings page. Each reproduces the hand-typed table it replaces exactly. |
-| `macros/lease_band.sql` | Adds `lease_band_coarse`: finding 4's 20-year bands, kept so its prose stays true. "Under 50" is identical to the model's band. |
+| `models/marts/mart_cbd_gradient.sql`, `mart_mrt_premium_by_cbd_ring.sql`, `mart_storey_premium.sql`, `mart_lease_4room.sql`, `mart_price_by_year.sql`, `mart_large_flat_share.sql`, `mart_town_ranking.sql` | The descriptive figures behind findings 1-6 and the Findings page. Each reproduces the hand-typed table it replaces exactly, except finding 4's, which moves to the model's 10-year lease bands so there is one band system. |
 | `explore.py`, `tests/python/test_explore.py` | Filter-aware versions of the descriptive figures, in plain pandas, returning the same columns as the marts. |
 | `check_explore_parity.py` | Explore, unfiltered, must equal the published marts. Run in CI on the fixture edition. |
 | `charts.py` | Styling and chart builders, fed by marts or by `explore.py` alike. |
