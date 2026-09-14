@@ -7,6 +7,18 @@
     40 years has only ~55 sales, so it is folded into "under 50".
 #}
 
+{% macro lease_band_order(remaining_lease_months) -%}
+    case
+        when {{ remaining_lease_months }} is null then null
+        when {{ remaining_lease_months }} < 600  then 1
+        when {{ remaining_lease_months }} < 720  then 2
+        when {{ remaining_lease_months }} < 840  then 3
+        when {{ remaining_lease_months }} < 960  then 4
+        when {{ remaining_lease_months }} < 1080 then 5
+        else 6
+    end
+{%- endmacro %}
+
 {% macro lease_band(remaining_lease_months) -%}
     case
         when {{ remaining_lease_months }} is null then null

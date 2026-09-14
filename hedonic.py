@@ -148,9 +148,15 @@ def fit_by_year(sales):
             continue
         fits.append(coefs.assign(calendar_year=year))
     if not fits:
-        return pd.DataFrame(columns=["calendar_year", "term", "level", "is_reference", "sales",
-                                     "estimate", "std_error", "effect_pct", "ci_low_pct",
-                                     "ci_high_pct"])
+        # Typed, not just named: DuckDB cannot create a table from untyped empty columns,
+        # and on the CI fixture every year can legitimately be too thin to fit.
+        return pd.DataFrame({
+            "calendar_year": pd.Series(dtype="int64"), "term": pd.Series(dtype="object"),
+            "level": pd.Series(dtype="object"), "is_reference": pd.Series(dtype="bool"),
+            "sales": pd.Series(dtype="int64"), "estimate": pd.Series(dtype="float64"),
+            "std_error": pd.Series(dtype="float64"), "effect_pct": pd.Series(dtype="float64"),
+            "ci_low_pct": pd.Series(dtype="float64"), "ci_high_pct": pd.Series(dtype="float64"),
+        })
     stacked = pd.concat(fits, ignore_index=True)
     return stacked[["calendar_year"] + [c for c in stacked.columns if c != "calendar_year"]]
 

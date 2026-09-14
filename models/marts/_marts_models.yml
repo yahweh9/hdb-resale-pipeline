@@ -24,3 +24,36 @@ models:
           - dbt_utils.expression_is_true:
               arguments:
                 expression: "> 0"
+
+  - name: mart_price_index
+    description: >
+      Grain: one row per month. Naive (median psm) and hedonic (all-years model) price
+      indices, Jan 2017 = 100, with the hedonic index's 95% interval.
+    columns:
+      - name: month
+        data_tests: [unique, not_null]
+      - name: hedonic_index
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: naive_index
+        data_tests: [not_null]
+
+  - name: mart_model_vs_naive
+    description: "Grain: one row per MRT band and lease band. Naive premium beside the model's."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [term, level]
+    columns:
+      - name: model_pct
+        data_tests: [not_null]
+
+  - name: mart_effects_by_year
+    description: "Grain: one row per year, term and level, for town, MRT band and lease band."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [calendar_year, term, level]
