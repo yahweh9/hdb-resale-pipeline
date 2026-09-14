@@ -37,19 +37,74 @@ def _pct(v):
     return f"{v:+.1f}%"
 
 
-# Marker name -> (published mart, [(column, header, formatter), ...]). Headers and
-# number formats live here, not in the mart: the mart stays plain numbers any tool can
-# read, and the document decides how a reader sees them.
+def _index(v):
+    return f"{v:.1f}"
+
+
+def col(name, fmt):
+    """A cell that formats one column of the row."""
+    return lambda row: fmt(row[name])
+
+
+def interval(low, high, fmt=_pct):
+    """A cell showing a 95% interval from two columns."""
+    return lambda row: f"{fmt(row[low])} to {fmt(row[high])}"
+
+
+def _term(term):
+    return lambda df: df[df["term"] == term]
+
+
+_MODEL_VS_NAIVE = [
+    ("Sales", col("sales", _count)),
+    ("Naive (group-by)", col("naive_pct", _pct)),
+    ("Model (like for like)", col("model_pct", _pct)),
+    ("95% interval", interval("model_ci_low_pct", "model_ci_high_pct")),
+]
+
+# Marker name -> the published mart it reads, an optional row filter, and its columns as
+# (header, cell) pairs. Headers and number formats live here, not in the mart: the mart
+# stays plain numbers any tool can read, and the document decides how a reader sees them.
+# The mart's own row order is kept, so ordering is decided once, in SQL.
 TABLES = {
-    "mrt_premium_by_band": (
-        "mart_mrt_premium_by_band",
-        [
-            ("mrt_band", "Distance to MRT", str),
-            ("sales", "Sales", _count),
-            ("median_price_psm", "Median psm", _sgd),
-            ("premium_vs_farthest_pct", "vs over 1.2km", _pct),
+    "mrt_premium_by_band": {
+        "mart": "mart_mrt_premium_by_band",
+        "columns": [
+            ("Distance to MRT", col("mrt_band", str)),
+            ("Sales", col("sales", _count)),
+            ("Median psm", col("median_price_psm", _sgd)),
+            ("vs over 1.2km", col("premium_vs_farthest_pct", _pct)),
         ],
-    ),
+    },
+    "mrt_model_vs_naive": {
+        "mart": "mart_model_vs_naive",
+        "rows": _term("mrt_band"),
+        "columns": [("Distance to MRT", col("level", str))] + _MODEL_VS_NAIVE,
+    },
+    "lease_model_vs_naive": {
+        "mart": "mart_model_vs_naive",
+        "rows": _term("lease_band"),
+        "columns": [("Lease remaining (years)", col("level", str))] + _MODEL_VS_NAIVE,
+    },
+    "mrt_premium_by_year": {
+        "mart": "mart_effects_by_year",
+        "rows": lambda df: df[df["level"] == "0-400m"],
+        "columns": [
+            ("Year", col("calendar_year", str)),
+            ("0-400m vs over 1.2km", col("effect_pct", _pct)),
+            ("95% interval", interval("ci_low_pct", "ci_high_pct")),
+        ],
+    },
+    "price_index_by_year": {
+        "mart": "mart_price_index",
+        "rows": lambda df: df[df["is_year_end"]],
+        "columns": [
+            ("Month", col("month", str)),
+            ("Median psm index", col("naive_index", _index)),
+            ("Quality-adjusted index", col("hedonic_index", _index)),
+            ("95% interval", interval("hedonic_ci_low", "hedonic_ci_high", _index)),
+        ],
+    },
 }
 
 OPEN = re.compile(r"<!-- (?:table: [\w-]+|edition) -->")
@@ -64,14 +119,16 @@ BLOCK = re.compile(
 def _markdown_table(name, root):
     if name not in TABLES:
         raise ValueError(f"FINDINGS.md asks for an unknown table: {name}")
-    mart, columns = TABLES[name]
-    rows = edition.read_table(mart, root).to_dict("records")
+    spec = TABLES[name]
+    table = edition.read_table(spec["mart"], root)
+    rows = spec.get("rows", lambda df: df)(table).to_dict("records")
+    columns = spec["columns"]
 
     lines = [
-        "| " + " | ".join(header for _, header, _ in columns) + " |",
+        "| " + " | ".join(header for header, _ in columns) + " |",
         "|" + "---|" * len(columns),
     ]
-    lines += ["| " + " | ".join(fmt(row[col]) for col, _, fmt in columns) + " |" for row in rows]
+    lines += ["| " + " | ".join(cell(row) for _, cell in columns) + " |" for row in rows]
     return "\n".join(lines) + "\n"
 
 

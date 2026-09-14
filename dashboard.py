@@ -15,6 +15,7 @@ recomputed from every sale under whatever filters are chosen.
 import os
 
 import altair as alt
+import pandas as pd
 import streamlit as st
 
 import edition
@@ -68,7 +69,82 @@ def load_sales():
 @st.cache_data
 def load_published():
     """The stamp and the published marts. Small, and never filtered."""
-    return edition.read_stamp(), edition.read_table("mart_mrt_premium_by_band")
+    return (
+        edition.read_stamp(),
+        edition.read_table("mart_mrt_premium_by_band"),
+        edition.read_table("mart_price_index"),
+        edition.read_table("mart_effects_by_year"),
+    )
+
+
+def price_index(index):
+    """Quality-adjusted price index against the median, from the published mart.
+
+    Two series in fixed slots, so a colour always means the same index. The model's line
+    carries its 95% interval as a band; the median has no interval to show. Where the
+    lines part, the mix of flats sold moved, not their prices.
+    """
+    index = index.assign(month=pd.to_datetime(index["month"]))
+    lines = index.melt(
+        id_vars=["month"], value_vars=["hedonic_index", "naive_index"],
+        var_name="series", value_name="index",
+    ).replace({"series": {"hedonic_index": "Quality-adjusted (model)",
+                          "naive_index": "Median price per sqm"}})
+    domain = ["Quality-adjusted (model)", "Median price per sqm"]
+
+    band = alt.Chart(index).mark_area(color=PRIMARY, opacity=0.25).encode(
+        x=alt.X("month:T", title=None),
+        y=alt.Y("hedonic_ci_low:Q", title="Index, Jan 2017 = 100", scale=alt.Scale(zero=False)),
+        y2="hedonic_ci_high:Q",
+    )
+    line = alt.Chart(lines).mark_line(strokeWidth=2, interpolate="monotone").encode(
+        x="month:T",
+        y="index:Q",
+        color=alt.Color("series:N", title=None, sort=domain,
+                        scale=alt.Scale(domain=domain, range=SERIES[:2]),
+                        legend=alt.Legend(orient="top")),
+        tooltip=[
+            alt.Tooltip("month:T", title="Month", format="%b %Y"),
+            alt.Tooltip("series:N", title="Index"),
+            alt.Tooltip("index:Q", title="Value", format=".1f"),
+        ],
+    )
+    return style((band + line).properties(height=300))
+
+
+def effects_over_time(effects):
+    """Two published effects, refitted each year: the station premium and the short-lease
+    discount, each with its 95% interval as a rule.
+
+    Chosen because they are the two findings the model overturned, so how stable they are
+    matters. Fixed colour slots, labelled series, zero line for reference.
+    """
+    picks = {"0-400m": "Within 400m of MRT (vs over 1.2km)",
+             "under 50": "Under 50 years lease (vs 90+)"}
+    rows = effects[effects["level"].isin(picks)].assign(series=lambda d: d["level"].map(picks))
+    domain = list(picks.values())
+    color = alt.Color("series:N", title=None, sort=domain,
+                      scale=alt.Scale(domain=domain, range=SERIES[:2]),
+                      legend=alt.Legend(orient="top", labelLimit=320))
+    base = alt.Chart(rows).encode(
+        x=alt.X("calendar_year:O", title=None, axis=alt.Axis(labelAngle=0)),
+        color=color,
+    )
+    rules = base.mark_rule(strokeWidth=2, opacity=0.5).encode(
+        y=alt.Y("ci_low_pct:Q", title="Effect on price per sqm (%)"), y2="ci_high_pct:Q",
+    )
+    points = base.mark_line(strokeWidth=2, point=alt.OverlayMarkDef(size=48, filled=True)).encode(
+        y="effect_pct:Q",
+        tooltip=[
+            alt.Tooltip("calendar_year:O", title="Year"),
+            alt.Tooltip("series:N", title="Effect"),
+            alt.Tooltip("effect_pct:Q", title="Effect (%)", format="+.1f"),
+            alt.Tooltip("ci_low_pct:Q", title="95% low", format="+.1f"),
+            alt.Tooltip("ci_high_pct:Q", title="95% high", format="+.1f"),
+        ],
+    )
+    zero = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color=GRID, strokeWidth=1).encode(y="y:Q")
+    return style((zero + rules + points).properties(height=280))
 
 
 def kpi_row(df):
@@ -332,7 +408,7 @@ python publish_edition.py""",
         st.stop()
 
     df = load_sales()
-    stamp, mrt_bands = load_published()
+    stamp, mrt_bands, index, effects = load_published()
 
     with st.sidebar:
         st.header("Filters")
@@ -369,6 +445,14 @@ python publish_edition.py""",
         st.subheader("Median price over time")
         st.altair_chart(price_trend(filtered), use_container_width=True)
 
+        st.subheader("Prices like for like")
+        st.altair_chart(price_index(index), use_container_width=True)
+        st.caption(
+            "Published figure, unaffected by the filters. The model prices the same flat "
+            "-- same town, MRT band, lease band, storey and flat type -- each month. Where "
+            "the lines part, the mix of flats sold changed, not their prices."
+        )
+
         st.subheader("The CBD premium, and where it stops")
         st.altair_chart(cbd_gradient(filtered), use_container_width=True)
         st.caption(
@@ -383,6 +467,14 @@ python publish_edition.py""",
             "Published figure: every sale in the edition, unaffected by the filters. "
             "Naive, not controlled -- station proximity is entangled with distance "
             "to the CBD (see FINDINGS.md, finding 2)."
+        )
+
+        st.subheader("How the model's effects moved")
+        st.altair_chart(effects_over_time(effects), use_container_width=True)
+        st.caption(
+            "Published figure: the hedonic model refitted on each calendar year, holding "
+            "town, the other band, storey, flat type and month constant. Bars are 95% "
+            "intervals. 2026 is nine months."
         )
 
         st.subheader("Transaction volume")
