@@ -1,0 +1,5 @@
+ring_order,cbd_ring,near_mrt_sales,not_near_sales,near_mrt_psm,not_near_psm,premium_pct
+1,under 5km,9079,11327,7504.0,6394.0,17.4
+2,5-10km,12657,31945,6098.0,5650.0,7.9
+3,10-15km,42256,60567,5375.0,5247.0,2.4
+4,15km+,14690,57553,5000.0,4743.0,5.4

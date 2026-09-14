@@ -142,6 +142,81 @@ TABLES = {
         "rows": lambda df: df[df["verdict"] == "below"].nsmallest(10, "premium_pct"),
         "columns": _FAIR_VALUE,
     },
+    "cbd_gradient": {
+        "mart": "mart_cbd_gradient",
+        "columns": [
+            ("km from CBD", col("km_from_cbd", str)),
+            ("Median psm", col("median_price_psm", _sgd)),
+            ("Sales", col("sales", _count)),
+        ],
+    },
+    "mrt_premium_by_cbd_ring": {
+        "mart": "mart_mrt_premium_by_cbd_ring",
+        "columns": [
+            ("Distance from CBD", col("cbd_ring", str)),
+            ("Near MRT", col("near_mrt_psm", _sgd)),
+            ("Not near", col("not_near_psm", _sgd)),
+            ("Premium", col("premium_pct", _pct)),
+        ],
+    },
+    "storey_naive": {
+        "mart": "mart_storey_premium",
+        "rows": lambda df: df.dropna(subset=["naive_4room_psm"]),
+        "columns": [
+            ("Tier", col("floor_tier", str)),
+            ("Median psm (4-room)", col("naive_4room_psm", _sgd)),
+            ("Naive premium", col("naive_premium_pct", _pct)),
+        ],
+    },
+    "storey_controlled": {
+        "mart": "mart_storey_premium",
+        "rows": lambda df: df.dropna(subset=["controlled_multiplier"]),
+        "columns": [
+            ("Tier", col("floor_tier", str)),
+            ("Controlled multiplier", col("controlled_multiplier", lambda v: f"{v:.3f}")),
+            ("Comparison cells", col("comparison_cells", _count)),
+        ],
+    },
+    "lease_naive_4room": {
+        "mart": "mart_lease_4room",
+        # Dearest first: the finding is where "under 50" lands in this order.
+        "rows": lambda df: df.sort_values("median_price_psm", ascending=False),
+        "columns": [
+            ("Remaining lease (years)", col("lease_band", str)),
+            ("Median psm", col("median_price_psm", _sgd)),
+            ("Sales", col("sales", _count)),
+        ],
+    },
+    "lease_confound_4room": {
+        "mart": "mart_lease_4room",
+        "columns": [
+            ("Remaining lease (years)", col("lease_band", str)),
+            ("Median km to CBD", col("median_km_to_cbd", lambda v: f"{v:.1f} km")),
+            ("% in mature estates", col("pct_mature", lambda v: f"{v:.0f}%")),
+            ("Sales", col("sales", _count)),
+        ],
+    },
+    "price_by_year": {
+        "mart": "mart_price_by_year",
+        "columns": [
+            ("Year", col("calendar_year", str)),
+            ("Median psm", col("median_price_psm", _sgd)),
+            ("Sales", col("sales", _count)),
+            ("Mature", col("mature_psm", _sgd)),
+            ("Non-mature", col("non_mature_psm", _sgd)),
+            ("Mature premium", col("maturity_gap_pct", _share)),
+        ],
+    },
+    "large_flat_share": {
+        "mart": "mart_large_flat_share",
+        "columns": [
+            ("Region", col("region", str)),
+            ("2017", col("share_2017", _share)),
+            ("2021", col("share_2021", _share)),
+            ("Latest year", col("share_latest", _share)),
+            ("Change", col("change_pts", lambda v: f"{v:+.1f} pts")),
+        ],
+    },
     "price_index_by_year": {
         "mart": "mart_price_index",
         "rows": lambda df: df[df["is_year_end"]],
