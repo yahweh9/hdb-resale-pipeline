@@ -6,6 +6,8 @@
     "mart_mrt_premium_by_band",
     "mart_price_index",
     "mart_model_vs_naive",
-    "mart_effects_by_year"
+    "mart_effects_by_year",
+    "mart_model_validation",
+    "mart_block_fair_value"
   ]
 }

@@ -330,6 +330,86 @@ decoration.
 
 ---
 
+## 7. Which blocks sell above what their attributes justify
+
+The model has to earn this section first. Each year's model was fitted on 80% of blocks
+and asked to price the other 20%, which it never saw, against a lazy guess: the median
+price per sqm for that town and flat type.
+
+<!-- table: model_validation -->
+| Year | Unseen sales | Model: median miss | Guess: median miss | Model: within 10% | Guess: within 10% |
+|---|---|---|---|---|---|
+| 2017 | 4,126 | 6.5% | 7.9% | 70.1% | 59.4% |
+| 2018 | 4,294 | 6.8% | 8.2% | 67.6% | 57.6% |
+| 2019 | 4,213 | 7.0% | 9.0% | 66.8% | 53.7% |
+| 2020 | 4,393 | 6.5% | 9.4% | 70.1% | 52.2% |
+| 2021 | 5,417 | 6.2% | 9.3% | 71.1% | 53.3% |
+| 2022 | 5,008 | 5.5% | 8.7% | 76.7% | 56.2% |
+| 2023 | 5,012 | 5.1% | 8.3% | 78.7% | 57.8% |
+| 2024 | 5,442 | 5.3% | 8.2% | 78.2% | 57.5% |
+| 2025 | 5,004 | 5.6% | 8.6% | 76.7% | 55.9% |
+| 2026 | 3,507 | 6.0% | 9.5% | 72.7% | 52.2% |
+| All years | 46,416 | 6.0% | 8.7% | 73.2% | 55.6% |
+<!-- /table -->
+
+A typical unseen sale is priced within about 6%, against about 9% for the guess, and the
+model is closer in every year. A dbt test fails the build if that ever stops being true.
+
+Each sale in the last 36 months is then compared with its own year's prediction, and
+every block's sales are averaged. A block is called above or below only with at least 10
+sales and a 95% interval clear of zero:
+
+<!-- table: fair_value_verdicts -->
+| Verdict | Blocks | Their sales |
+|---|---|---|
+| above | 793 | 13,836 |
+| below | 1,008 | 15,817 |
+| in line | 886 | 12,770 |
+| not enough sales | 6,782 | 34,822 |
+<!-- /table -->
+
+Furthest above what their attributes justify:
+
+<!-- table: fair_value_above -->
+| Block | Town | Sales | vs model | 95% interval |
+|---|---|---|---|---|
+| 87 ZION RD | BUKIT MERAH | 10 | +34.8% | +31.0% to +38.8% |
+| 182 JELEBU RD | BUKIT PANJANG | 12 | +31.9% | +23.0% to +41.4% |
+| 13 CANTONMENT CL | BUKIT MERAH | 12 | +28.9% | +24.7% to +33.3% |
+| 183 JELEBU RD | BUKIT PANJANG | 10 | +28.0% | +21.4% to +35.0% |
+| 12 CANTONMENT CL | BUKIT MERAH | 14 | +27.5% | +22.7% to +32.5% |
+| 11 CANTONMENT CL | BUKIT MERAH | 11 | +25.8% | +21.9% to +29.8% |
+| 277D COMPASSVALE LINK | SENGKANG | 10 | +25.3% | +21.9% to +28.7% |
+| 154B BEDOK STH RD | BEDOK | 11 | +25.0% | +18.9% to +31.5% |
+| 238 HOUGANG AVE 1 | HOUGANG | 13 | +24.6% | +20.9% to +28.4% |
+| 122 YUAN CHING RD | JURONG WEST | 12 | +24.6% | +20.0% to +29.3% |
+<!-- /table -->
+
+Furthest below:
+
+<!-- table: fair_value_below -->
+| Block | Town | Sales | vs model | 95% interval |
+|---|---|---|---|---|
+| 989A JURONG WEST ST 93 | JURONG WEST | 14 | -23.6% | -25.5% to -21.8% |
+| 987A JURONG WEST ST 93 | JURONG WEST | 11 | -21.0% | -23.5% to -18.4% |
+| 677C JURONG WEST ST 64 | JURONG WEST | 10 | -20.9% | -24.2% to -17.3% |
+| 662 BUFFALO RD | CENTRAL AREA | 10 | -20.6% | -24.2% to -16.9% |
+| 21 EUNOS CRES | GEYLANG | 14 | -19.8% | -23.2% to -16.1% |
+| 22 SIN MING RD | BISHAN | 14 | -19.2% | -21.5% to -16.9% |
+| 24 SIN MING RD | BISHAN | 10 | -19.0% | -21.8% to -16.0% |
+| 41 SIMS DR | GEYLANG | 13 | -19.0% | -21.7% to -16.3% |
+| 51 LOR 6 TOA PAYOH | TOA PAYOH | 20 | -18.6% | -21.0% to -16.1% |
+| 91 LOR 3 TOA PAYOH | TOA PAYOH | 14 | -18.6% | -22.1% to -15.0% |
+<!-- /table -->
+
+**What this can't tell you:** why. A block's premium is everything about it the model
+does not see — flat design (the model has no flat model, so premium and DBSS designs
+land here), block age within a lease band, views, upkeep, a new amenity next door.
+"Above" means buyers pay more for this block than for its measured attributes, not that
+it is overpriced.
+
+---
+
 ## What would settle this
 
 Every caveat above has the same shape: a `GROUP BY` estimates one effect while the
@@ -350,8 +430,9 @@ It turns "flats near stations sell for 7.2% more" into "being within 400m of a s
 is worth about 19%, in the same town, with the same lease, storey, flat type and month".
 Findings 2, 4 and 5 carry its tables beside the group-by ones.
 
-It still assumes each effect is the same everywhere — a station is worth the same in
-Bishan as in Woodlands — and it has not yet been tested on blocks it has never seen.
+On blocks it never saw it prices a typical sale within about 6% (finding 7). It still
+assumes each effect is the same everywhere — a station is worth the same in Bishan as in
+Woodlands.
 
 ---
 
