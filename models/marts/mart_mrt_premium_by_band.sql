@@ -12,15 +12,16 @@
 
 with sales as (
 
+    -- The band is a property of the block, classified once in dim_block.
     select
-        {{ mrt_band_order('b.dist_to_nearest_mrt_km') }} as band_order,
-        {{ mrt_band_label('b.dist_to_nearest_mrt_km') }} as mrt_band,
+        b.mrt_band_order as band_order,
+        b.mrt_band,
         x.price_psm
     from {{ ref('fact_resale_txn') }} x
     join {{ ref('dim_block') }} b using (block_key)
     -- An ungeocoded block has no distance and so no band. The coverage test in
     -- tests/dbt keeps that set empty; the reconcile test proves nothing else is lost.
-    where b.dist_to_nearest_mrt_km is not null
+    where b.mrt_band_order is not null
 
 ),
 

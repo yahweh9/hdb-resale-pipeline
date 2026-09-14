@@ -1,12 +1,11 @@
 {#
-    The one definition of the MRT distance bands. The mart uses it now and the hedonic
-    model's input will use it in slice 2, so a band edge can only ever change in one
-    place.
+    The one definition of the MRT distance bands, applied once in dim_block so every
+    consumer (the marts now, the hedonic model in slice 2) reads the same band.
 
-    Upper edges are inclusive to match dim_block.is_near_mrt (<= 0.4): "0-400m" and
-    "near MRT" must count exactly the same blocks, or the dashboard and the findings
-    quote two different near-station premiums. The two thinnest ranges are merged:
-    over 2km has ~520 sales, too few to stand as a band of its own.
+    Upper edges are inclusive: 400m exactly is near. is_near_mrt is defined as band 1,
+    so "0-400m" and "near MRT" always count the same blocks. Pass the UNROUNDED
+    distance -- banding a rounded one moves blocks across edges. The two thinnest
+    ranges are merged: over 2km has ~520 sales, too few to stand as a band of its own.
 #}
 
 {% macro mrt_band_order(dist_km) -%}

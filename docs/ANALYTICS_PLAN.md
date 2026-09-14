@@ -179,7 +179,7 @@ stamp, generated table, dashboard reading files, hosting.
 
 ## Global constraints
 
-- Upper band edges are inclusive, matching `is_near_mrt` (`<= 0.4`).
+- Bands are classified once, in `dim_block`, on the UNROUNDED distance (upper edges inclusive); `is_near_mrt` is band 1. Rounded columns are for display only.
 - Medians, never means. Price per sqm for anything compared across flats.
 - `pytest` stays offline and needs no files on disk.
 - CI never writes to `published/`. Only a deliberate local publish does.
