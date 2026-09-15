@@ -445,8 +445,9 @@ docs/                    This document, the analytics plan, the README screensho
   separate training job that writes its coefficients back.
 - **GitHub Actions to Airflow or Dagster.** Actions is fine for a cron and a test
   gate. It has no backfill semantics, no retry granularity, and no dependency graph
-  across pipelines. The scheduled run here also depends on `actions/cache` to carry
-  bronze between runs, which is a cache, not storage, and is allowed to evict.
+  across pipelines. The scheduled run here has nowhere durable to keep bronze between
+  runs: `actions/cache` is a cache, not storage, and on a monthly schedule it has
+  usually evicted by the next run, so each run rebuilds bronze from the APIs.
 - **A committed edition to an object store.** Committing 13 CSVs and one parquet file is
   right at this size: the edition is versioned with the prose that describes it. At a
   few hundred megabytes it belongs in a bucket, addressed by its stamp.
@@ -486,12 +487,24 @@ locally-passing suite:
 Both are the reason this list used to say "written but not yet exercised". A workflow
 that has not gone green is not a workflow that works.
 
-**Not yet exercised, and not yet working:** the scheduled ingest workflow. It is
-`workflow_dispatch` plus a monthly cron and has not fired. Read against the rest of the
-pipeline, it would fail when it does: it runs the resale ingest and then `dbt build`,
-but never produces the MRT archive or the block coordinates that `dim_block` reads, and
-both live in the git-ignored `data/` directory. CI does not hit this because
-`seed_fixture.py` seeds the spatial files too.
+**Fixed on paper, not yet exercised:** the scheduled ingest workflow. It is
+`workflow_dispatch` plus a monthly cron and has not fired. As first written it would
+have failed: it ran the resale ingest and then `dbt build`, but never produced the MRT
+archive or the block coordinates that `dim_block` reads. Both live in the git-ignored
+`data/` directory, and CI never hit the gap because `seed_fixture.py` seeds them.
+
+The workflow now produces all three bronze inputs itself: the resale ingest, a fresh
+Wikidata query for stations, and the OneMap geocoder, which needs `ONEMAP_EMAIL` and
+`ONEMAP_PASSWORD` as repository secrets and checks for them before doing anything else.
+It is written for an empty `data/` directory, because that is the usual case rather
+than the edge case. GitHub evicts a cache entry nobody has read for seven days, so a
+monthly run almost always misses the bronze cache. That means a full resale load and a
+full geocode, about half an hour here and not yet timed from a GitHub runner. The cache
+only helps a rerun within the week. The bronze cache is saved before `dbt build`, so a
+failing data test does not throw away a finished geocode.
+
+Until a run goes green this belongs in this paragraph, not in the list above, for the
+reason the CI story gives.
 
 **Deleted, and worth naming.** An earlier pandas feature-engineering track
 (`silver_spatial_join.py`, `silver_features.py`) was removed once the MRT and geocoding
