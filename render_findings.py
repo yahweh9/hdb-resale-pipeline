@@ -1,6 +1,6 @@
-"""Fill the generated tables in FINDINGS.md from the published edition.
+"""Fill the generated tables in FINDINGS.md and README.md from the published edition.
 
-FINDINGS.md is prose written by a person, with tables that are not. Each generated
+Both documents are prose written by a person, with tables that are not. Each generated
 table sits between markers:
 
     <!-- table: mrt_premium_by_band -->
@@ -11,8 +11,8 @@ and the data-cut stamp between <!-- edition --> and <!-- /edition -->. Everythin
 outside the markers is left byte for byte, including numbers quoted inside sentences,
 which stay hand-written and get re-read whenever an edition is refreshed.
 
-    python render_findings.py           # rewrite FINDINGS.md from published/
-    python render_findings.py --check   # exit 1 if FINDINGS.md is out of date (CI)
+    python render_findings.py           # rewrite both documents from published/
+    python render_findings.py --check   # exit 1 if either is out of date (CI)
 """
 
 import argparse
@@ -22,7 +22,9 @@ import sys
 
 import edition
 
-FINDINGS = "FINDINGS.md"
+# The README carries the edition stamp too, so its headline numbers never float free of
+# the data cut they came from.
+DOCUMENTS = ["FINDINGS.md", "README.md"]
 
 
 def _count(v):
@@ -240,7 +242,7 @@ BLOCK = re.compile(
 
 def _markdown_table(name, root):
     if name not in TABLES:
-        raise ValueError(f"FINDINGS.md asks for an unknown table: {name}")
+        raise ValueError(f"The document asks for an unknown table: {name}")
     spec = TABLES[name]
     table = edition.read_table(spec["mart"], root)
     rows = spec.get("rows", lambda df: df)(table).to_dict("records")
@@ -272,13 +274,13 @@ def render(text, root=edition.EDITION_DIR):
     # NEXT block's close, swallowing an opening marker on the way. Counting openings
     # against complete blocks catches that before any prose is overwritten.
     if len(OPEN.findall(text)) != len(blocks):
-        raise ValueError("FINDINGS.md has an unclosed marker")
+        raise ValueError("The document has an unclosed marker")
 
     out, pos = [], 0
     for m in blocks:
         kind = "edition" if m["edition"] else "table"
         if m["close"] != kind:
-            raise ValueError(f"FINDINGS.md has an unclosed marker: <!-- {kind} --> closed by /{m['close']}")
+            raise ValueError(f"The document has an unclosed marker: <!-- {kind} --> closed by /{m['close']}")
         body = _stamp_line(root) if m["edition"] else _markdown_table(m["name"], root)
         opening = "<!-- edition -->" if m["edition"] else f"<!-- table: {m['name']} -->"
         out += [text[pos:m.start()], f"{opening}\n{body}<!-- /{kind} -->"]
@@ -290,26 +292,29 @@ def render(text, root=edition.EDITION_DIR):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
-                        help="Exit 1 if FINDINGS.md does not match the edition; write nothing.")
+                        help="Exit 1 if a document does not match the edition; write nothing.")
     args = parser.parse_args()
 
-    with open(FINDINGS, encoding="utf-8") as f:
-        current = f.read()
-    rendered = render(current)
+    stale = []
+    for path in DOCUMENTS:
+        with open(path, encoding="utf-8") as f:
+            current = f.read()
+        rendered = render(current)
 
-    if args.check:
-        if rendered != current:
-            print("FINDINGS.md is out of date with published/. Run: python render_findings.py")
-            sys.exit(1)
-        print("FINDINGS.md matches the published edition.")
-        return
+        if rendered == current:
+            print(f"{path} matches the published edition.")
+        elif args.check:
+            print(f"{path} is out of date with published/.")
+            stale.append(path)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(rendered)
+            print(f"{path} updated from the published edition.")
 
-    if rendered != current:
-        with open(FINDINGS, "w", encoding="utf-8") as f:
-            f.write(rendered)
-        print("FINDINGS.md updated from the published edition.")
-    else:
-        print("FINDINGS.md already matches the published edition.")
+    # Every document is checked before failing, so one run names all the stale ones.
+    if stale:
+        print("Run: python render_findings.py")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -84,6 +84,29 @@ def test_an_unclosed_marker_fails_rather_than_eating_the_document(root):
         render_findings.render("<!-- table: mrt_premium_by_band -->\nthe rest of the doc\n", root)
 
 
+def test_check_names_every_stale_document_before_failing(root, tmp_path, monkeypatch, capsys):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "FRESH.md").write_text(render_findings.render(DOC, root), encoding="utf-8")
+    (docs / "STALE_ONE.md").write_text(DOC, encoding="utf-8")
+    (docs / "STALE_TWO.md").write_text(DOC, encoding="utf-8")
+    paths = [str(docs / name) for name in ("STALE_ONE.md", "FRESH.md", "STALE_TWO.md")]
+
+    real_render = render_findings.render
+    monkeypatch.setattr(render_findings, "render", lambda text: real_render(text, root))
+    monkeypatch.setattr(render_findings, "DOCUMENTS", paths)
+    monkeypatch.setattr("sys.argv", ["render_findings.py", "--check"])
+
+    with pytest.raises(SystemExit) as exit_:
+        render_findings.main()
+
+    out = capsys.readouterr().out
+    assert exit_.value.code == 1
+    assert "STALE_ONE.md is out of date" in out and "STALE_TWO.md is out of date" in out
+    assert "FRESH.md matches" in out
+    assert (docs / "STALE_ONE.md").read_text(encoding="utf-8") == DOC  # --check writes nothing
+
+
 def test_a_table_can_show_a_filtered_slice_of_a_mart(root, monkeypatch):
     # One mart, several tables: the lease rows go in finding 4, the MRT rows in finding 2.
     monkeypatch.setitem(render_findings.TABLES, "near_only", {
