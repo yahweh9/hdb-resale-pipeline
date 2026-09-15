@@ -67,30 +67,30 @@ One pull request each, CI green before merge.
    in PR #2.
 3. ~~Price index, effects over time, and the before/after tables.~~ Done in PR #3.
 4. ~~Block holdout validation against the baseline, then fair value.~~ Done in PR #4.
-5. **Remaining descriptive marts; Findings/Explore page split; Explore maths into a
-   tested module** (detailed below).
-6. README landing page and `docs/ENGINEERING.md`.
+5. ~~Remaining descriptive marts; Findings/Explore page split; Explore maths into a
+   tested module.~~ Done in PR #5.
+6. **README landing page and `docs/ENGINEERING.md`** (detailed below).
 7. Forecast replay: each year predicted from the years before it, against a "same as
    last year" baseline, backing the no-forecasting limitation.
 
 ---
 
-## Slice 5: every table generated, and two dashboard pages
+## Slice 6: a landing page, and the engineering detail moved out
 
-Finish the move off hand-typed numbers, then split the dashboard into what is published
-and what is exploratory.
+The README was written when the project was a pipeline. It now has to introduce both
+halves in the time a reader gives a landing page, while every engineering detail it held
+survives, corrected to match what the repository is now.
 
 ### Files
 
 | File | Responsibility |
 |---|---|
-| `models/marts/mart_cbd_gradient.sql`, `mart_mrt_premium_by_cbd_ring.sql`, `mart_storey_premium.sql`, `mart_lease_4room.sql`, `mart_price_by_year.sql`, `mart_large_flat_share.sql`, `mart_town_ranking.sql` | The descriptive figures behind findings 1-6 and the Findings page. Each reproduces the hand-typed table it replaces exactly, except finding 4's, which moves to the model's 10-year lease bands so there is one band system. |
-| `explore.py`, `tests/python/test_explore.py` | Filter-aware versions of the descriptive figures, in plain pandas, returning the same columns as the marts. |
-| `check_explore_parity.py` | Explore, unfiltered, must equal the published marts. Run in CI on the fixture edition. |
-| `charts.py` | Styling and chart builders, fed by marts or by `explore.py` alike. |
-| `dashboard.py` | Two pages: Findings (published marts only, no filters) and Explore (filters, `explore.py`). |
-| `publish_edition.py` | Sales gain `mrt_band` columns, so Explore never re-derives a band. |
-| `FINDINGS.md`, `render_findings.py` | Every remaining hand table becomes a marker. |
+| `README.md` | Landing page: what the project is, the edition stamp, a dashboard screenshot, the headline findings with links, how it works, how to run the dashboard, and where each document is. |
+| `docs/ENGINEERING.md` | Everything the README held about the pipeline, with current counts, plus the analytics layer's engineering: dbt Python models, planted-answer tests, build-failing gates, the edition, generated documents and the parity check. Names what is not working yet. |
+| `docs/img/findings.png` | The Findings page, captured from the committed edition. |
+| `render_findings.py`, `tests/python/test_render_findings.py` | Renders README.md as well as FINDINGS.md, so the README's data-cut stamp is generated and checked in CI like the findings tables. |
+| `FINDINGS.md` | Points at the new documents; finding 3 gains the model's storey effects, which undercut its town-controlled figure. |
+| `.github/workflows/ci.yml` | The render check's step name covers both documents. |
 
 ## Global constraints
 
