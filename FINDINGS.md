@@ -6,10 +6,11 @@ What 240,074 HDB resale transactions say, and — more carefully — what they d
 **Data cut:** resale transactions through **Sep 2026** (240,074 sales) · published **14 Sep 2026**
 <!-- /edition -->
 
-This is the analysis document. [README.md](README.md) is about the pipeline that
-produces the data; this is about what came out of it. Every figure here is
-reproducible from the warehouse `dbt build` creates, and the query behind each one is
-a single join across the gold star schema.
+This is the analysis document. [README.md](README.md) is the overview, and
+[docs/ENGINEERING.md](docs/ENGINEERING.md) covers the pipeline that produces the data;
+this is about what came out of it. Every table here is generated from the published
+edition stamped above, and every number in it is reproducible from the warehouse
+`dbt build` creates.
 
 ---
 
@@ -27,10 +28,13 @@ a single join across the gold star schema.
 - Source: [data.gov.sg](https://data.gov.sg) resale flat prices, Jan 2017 – Sep 2026.
   Station locations from Wikidata; block coordinates geocoded via OneMap.
 
-**The honest frame for everything below:** these are `GROUP BY` results. Location,
-lease, storey, flat type and age all correlate with one another, and a group-by
-estimates one effect at a time while the others move freely in the background. Where
-that changes an answer, it is said so explicitly — in one case it reverses it.
+**The honest frame for everything below:** most tables are `GROUP BY` results.
+Location, lease, storey, flat type and age all correlate with one another, and a
+group-by estimates one effect at a time while the others move freely in the
+background. Where that changes an answer, it is said so explicitly — in one case it
+reverses it. Findings 2, 4 and 5 then show a hedonic model's like-for-like figures
+beside the group-by ones, and finding 7 is built on it; the model is described in
+[What would settle this](#what-would-settle-this).
 
 ---
 
@@ -156,7 +160,7 @@ here are straight-line.
 
 ---
 
-## 3. The storey premium is real, and a third of it is the postcode
+## 3. The storey premium is real, and most of the headline is location and lease
 
 Comparing floor tiers directly, for 4-room flats:
 
@@ -187,11 +191,19 @@ cell):
 <!-- /table -->
 
 **The 20+ premium falls from 83% to 51%.** Around a third of the apparent storey
-effect was location and vintage. The remaining 51% is large, consistent across cells,
-and survives the control.
+effect was location. The remaining 51% is large and consistent across cells, but it
+does not survive a stricter comparison.
 
-**What this can't tell you:** the controls are coarse — town, not block. Within a town,
-tall blocks still differ systematically from short ones.
+**Holding lease constant as well, most of the rest goes.** Tall blocks are also newer:
+82% of sales on the 20th storey or above have 80 or more years of lease left, against
+26% of sales on low floors. The hedonic model, which also holds the lease band and MRT
+band constant, puts 20+ storeys at **about 20% above a low floor** (95% interval 19.5%
+to 21.4%), high floors at about 8% and mid floors at about 4%. That is still a real
+premium for height, and well under half of what the town-controlled cells show.
+
+**What this can't tell you:** the controls are still coarse — town and lease band, not
+block. Within those, tall blocks can differ from short ones in views, design and upkeep,
+and some of that is being credited to the storey.
 
 ---
 
@@ -232,9 +244,9 @@ Flats with under 50 years left sit **less than half as far from the CBD** as any
 with 60 or more years left, and 93% of them are in mature estates. It is a gradient, not
 an outlier: from 70–80 years down to under 50, the median distance to the CBD falls from
 14.7km to 6.2km and the share in mature estates rises from 29% to 93%. The oldest flats
-are in the oldest estates, and the oldest estates are the central ones. The five towns supplying most
-of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa, Queenstown and Marine
-Parade — every one of them central and mature.
+are in the oldest estates, and the oldest estates are the central ones. The five towns
+supplying most of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa,
+Queenstown and Marine Parade — every one of them central and mature.
 
 **Location is worth more than the lease is losing.** The lease effect is real; this
 grouping simply cannot see it, because the variable that would reveal it is almost
@@ -458,7 +470,8 @@ synthetic markets before it runs on real sales.
 
 It turns "flats near stations sell for 7.2% more" into "being within 400m of a station
 is worth about 19%, in the same town, with the same lease, storey, flat type and month".
-Findings 2, 4 and 5 carry its tables beside the group-by ones.
+Findings 2, 4 and 5 carry its tables beside the group-by ones, and finding 3 quotes its
+storey effects.
 
 On blocks it never saw it prices a typical sale within about 6% (finding 7). It still
 assumes each effect is the same everywhere — a station is worth the same in Bishan as in
@@ -495,5 +508,6 @@ a range test in the dbt build fails the pipeline if any value falls outside 0–
 ---
 
 *Generated tables come from the committed edition in `published/`, stamped at the top
-of this page. Reproduce with `python ingest_hdb.py --full && dbt build`, then
+of this page. To reproduce from the API, follow
+[Running it](docs/ENGINEERING.md#running-it): ingest, `dbt build`, then
 `python publish_edition.py && python render_findings.py`.*
