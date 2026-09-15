@@ -22,3 +22,6 @@ models:
     gold:
       +schema: gold
       +materialized: table
+    marts:
+      +schema: marts
+      +materialized: table

@@ -2,6 +2,10 @@
 
 What 240,074 HDB resale transactions say, and — more carefully — what they do not.
 
+<!-- edition -->
+**Data cut:** resale transactions through **Sep 2026** (240,074 sales) · published **14 Sep 2026**
+<!-- /edition -->
+
 This is the analysis document. [README.md](README.md) is about the pipeline that
 produces the data; this is about what came out of it. Every figure here is
 reproducible from the warehouse `dbt build` creates, and the query behind each one is
@@ -68,8 +72,20 @@ geometry, estate age and BTO vintage all vary across it and none is isolated her
 ## 2. The MRT premium is not one number — it is four
 
 Flats within 400m of a station sell at a **7.2% premium** overall (S$5,568 vs
-S$5,194 per sqm, n = 78,682 and 161,391). That headline is close to meaningless on its
-own, because station proximity is entangled with CBD proximity. Splitting by ring:
+S$5,194 per sqm, n = 78,682 and 161,391). By distance band, against the farthest:
+
+<!-- table: mrt_premium_by_band -->
+| Distance to MRT | Sales | Median psm | vs over 1.2km |
+|---|---|---|---|
+| 0-400m | 78,682 | S$5,568 | +10.1% |
+| 400-800m | 99,886 | S$5,288 | +4.6% |
+| 800m-1.2km | 43,601 | S$5,000 | -1.1% |
+| over 1.2km | 17,905 | S$5,055 | +0.0% |
+<!-- /table -->
+
+Almost all of the difference sits inside 800m; beyond that the bands are within about
+1% of each other. That headline is close to meaningless on its own, though, because
+station proximity is entangled with CBD proximity. Splitting by ring:
 
 | Distance from CBD | Near MRT | Not near | Premium |
 |---|---|---|---|
@@ -288,5 +304,6 @@ a range test in the dbt build fails the pipeline if any value falls outside 0–
 
 ---
 
-*Figures current as at the Sep 2026 data release. Reproduce with
-`python ingest_hdb.py --full && dbt build`, then `streamlit run dashboard.py`.*
+*Generated tables come from the committed edition in `published/`, stamped at the top
+of this page. Reproduce with `python ingest_hdb.py --full && dbt build`, then
+`python publish_edition.py && python render_findings.py`.*

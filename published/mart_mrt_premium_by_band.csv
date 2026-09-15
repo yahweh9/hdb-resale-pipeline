@@ -1,0 +1,5 @@
+band_order,mrt_band,sales,median_price_psm,premium_vs_farthest_pct
+1,0-400m,78682,5568.0,10.1
+2,400-800m,99886,5288.0,4.6
+3,800m-1.2km,43601,5000.0,-1.1
+4,over 1.2km,17905,5055.0,0.0

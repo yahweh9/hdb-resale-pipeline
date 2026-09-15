@@ -75,9 +75,17 @@ select
     n.lines                       as nearest_mrt_lines,
     round(n.dist_km, 2)           as dist_to_nearest_mrt_km,
 
+    -- Bands are classified on the unrounded distance; the rounding above is for
+    -- display only. Banding the rounded column instead would put a block 403m away
+    -- ("0.40 km") in 0-400m while is_near_mrt said it was not near -- 1,096 sales
+    -- counted as near by one and far by the other.
+    {{ mrt_band_order('n.dist_km') }} as mrt_band_order,
+    {{ mrt_band_label('n.dist_km') }} as mrt_band,
+
     -- 400m is the conventional planning threshold for "walkable to a station" and is
-    -- what HDB and URA use in their own accessibility studies.
-    n.dist_km <= 0.4              as is_near_mrt
+    -- what HDB and URA use in their own accessibility studies. Defined as the first
+    -- band, so "near MRT" and "0-400m" can never disagree.
+    {{ mrt_band_order('n.dist_km') }} = 1 as is_near_mrt
 
 from located l
 left join nearest_station n using (address)
