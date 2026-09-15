@@ -82,3 +82,18 @@ def test_an_unclosed_marker_fails_rather_than_eating_the_document(root):
     # Left unchecked, a missing close marker would swallow everything after it.
     with pytest.raises(ValueError, match="unclosed"):
         render_findings.render("<!-- table: mrt_premium_by_band -->\nthe rest of the doc\n", root)
+
+
+def test_a_table_can_show_a_filtered_slice_of_a_mart(root, monkeypatch):
+    # One mart, several tables: the lease rows go in finding 4, the MRT rows in finding 2.
+    monkeypatch.setitem(render_findings.TABLES, "near_only", {
+        "mart": "mart_mrt_premium_by_band",
+        "rows": lambda df: df[df["band_order"] == 1],
+        "columns": [("Band", render_findings.col("mrt_band", str)),
+                    ("Range", lambda r: f"{r['sales']:,} / {r['median_price_psm']:,.0f}")],
+    })
+
+    out = render_findings.render("<!-- table: near_only -->\n<!-- /table -->\n", root)
+
+    assert "| 0-400m | 77,650 / 5,568 |" in out
+    assert "over 1.2km" not in out

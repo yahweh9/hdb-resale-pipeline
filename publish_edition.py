@@ -27,7 +27,12 @@ WAREHOUSE = os.getenv("DUCKDB_PATH", "data/warehouse.duckdb")
 
 # Published marts, in the order the stamp lists them. A mart that is not named here is
 # not part of the edition, however finished it looks in the warehouse.
-MART_TABLES = ["mart_mrt_premium_by_band"]
+MART_TABLES = [
+    "mart_mrt_premium_by_band",
+    "mart_price_index",
+    "mart_model_vs_naive",
+    "mart_effects_by_year",
+]
 
 # One join per dimension -- the star the dashboard used to query directly. The ingest
 # timestamp is left behind: the stamp says which data this is, and a per-row load time
@@ -53,6 +58,9 @@ join gold.dim_date  d using (date_key)
 join gold.dim_town  t using (town_key)
 join gold.dim_flat  f using (flat_key)
 join gold.dim_block b using (block_key)
+-- Deterministic row order, so republishing unchanged data rewrites an identical file
+-- and git records no change, rather than a 2MB binary diff of shuffled rows.
+order by x.resale_txn_key
 """
 
 

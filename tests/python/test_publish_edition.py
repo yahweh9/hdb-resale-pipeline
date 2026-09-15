@@ -40,6 +40,7 @@ def warehouse(sales_rows=3):
     con.execute(f"""
         create table gold.fact_resale_txn as
         select
+            'txn' || i as resale_txn_key,
             case when i % 2 = 0 then 202601 else 202609 end as date_key,
             'f1' flat_key, 't1' town_key, 'b1' block_key,
             case when i % 2 = 0 then date '2026-01-01' else date '2026-09-01' end as transaction_month,
@@ -54,6 +55,10 @@ def warehouse(sales_rows=3):
             (4, 'over 1.2km', 1, 5000.0, 0.0)
         ) t(band_order, mrt_band, sales, median_price_psm, premium_vs_farthest_pct)
     """)
+    # Every other published mart only has to exist: these tests are about the export,
+    # and the marts' own columns are tested where dbt builds them.
+    for table in publish_edition.MART_TABLES:
+        con.execute(f"create table if not exists marts.{table} as select 1 as placeholder")
     return con
 
 

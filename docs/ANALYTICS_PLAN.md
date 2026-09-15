@@ -63,9 +63,9 @@ honest validation), served as a hosted dashboard that anyone can open.
 One pull request each, CI green before merge.
 
 1. ~~Thin slice: MRT premium by band, end to end.~~ Done in PR #1.
-2. **The fitting function with planted-answer tests, then the dbt Python model**
-   (detailed below).
-3. Price index and effects over time.
+2. ~~The fitting function with planted-answer tests, then the dbt Python model.~~ Done
+   in PR #2.
+3. **Price index, effects over time, and the before/after tables** (detailed below).
 4. Block holdout validation against the baseline, then fair value.
 5. Remaining descriptive marts; Findings/Explore page split; Explore maths into a
    tested module.
@@ -75,61 +75,36 @@ One pull request each, CI green before merge.
 
 ---
 
-## Slice 2: the hedonic model
+## Slice 3: price index, effects over time, before/after
 
-One fit across all years, with its coefficients as a tested warehouse table. Nothing is
-published yet: slice 3 turns the coefficients into the price index and the before/after
-tables.
+The model's first published output. The all-years fit becomes a quality-adjusted price
+index and before/after tables; a fit per calendar year shows how the reported effects
+moved.
 
 ### Files
 
 | File | Responsibility |
 |---|---|
-| `hedonic.py` | `fit_hedonic(sales)`: design matrix, OLS with block-clustered errors, tidy coefficients. Pandas, numpy and statsmodels only. |
-| `tests/python/test_hedonic.py` | Planted-answer tests on synthetic sales. |
-| `macros/lease_band.sql` | The one definition of the lease bands. |
-| `models/analysis/hedonic_sales.sql` | Model input: one row per sale with every band the model uses. |
-| `models/analysis/hedonic_coefficients.py` | dbt Python model: reads `hedonic_sales`, calls `fit_hedonic`. |
-| `models/analysis/_analysis_models.yml` | Column tests. |
-| `tests/dbt/assert_hedonic_coefficients_are_well_formed.sql` | One zero-effect reference per term; towns average to zero; level counts reconcile to the input. |
-| `profiles.yml` | `module_paths: ["."]`, so the dbt Python model can import `hedonic`. |
-| `requirements.txt` | Add `statsmodels`; drop the unused `scikit-learn` and its stale comment. |
+| `hedonic.py` | Adds `fit_by_year(sales)`: the same model per calendar year. A year the data cannot identify is skipped, not guessed. |
+| `models/analysis/hedonic_coefficients_by_year.py` | dbt Python model over `fit_by_year`. |
+| `tests/dbt/assert_every_substantial_year_is_fitted.sql` | Every year with 5,000+ sales has coefficients. The fixture's ~80-sale years are legitimately exempt. |
+| `macros/lease_band.sql` | Adds `lease_band_order`, so tables sort by lease without re-deriving bands. |
+| `models/marts/mart_price_index.sql` | Per month: sales, median psm, naive index, hedonic index with 95% CI, year-end flag. Jan 2017 = 100. |
+| `models/marts/mart_model_vs_naive.sql` | Per MRT and lease band: the naive premium next to the model's, with CI. |
+| `models/marts/mart_effects_by_year.sql` | Per year: town, MRT and lease effects with CI. |
+| `render_findings.py` | Table specs gain an optional row filter and sort, so one mart can feed several tables. |
+| `publish_edition.py` | Publishes the three new marts. |
+| `FINDINGS.md` | Generated tables in findings 2, 4 and 5; "What would settle this" updated, since the model now exists. |
+| `dashboard.py` | Price index chart (hedonic against naive) and an effects-over-time chart, both published figures. |
 
-### Interfaces
+### Tasks
 
-- `hedonic.fit_hedonic(sales: pd.DataFrame) -> pd.DataFrame`
-  - Input columns: `block_key`, `town`, `mrt_band`, `lease_band`, `floor_tier`,
-    `flat_type`, `transaction_month` (`"YYYY-MM"`) and `price_psm`.
-  - Output: one row per level of each term, with columns `term`, `level`,
-    `is_reference`, `sales`, `estimate` (log points), `std_error`, `effect_pct`,
-    `ci_low_pct` and `ci_high_pct`. The `term` values are `town`, `mrt_band`,
-    `lease_band`, `floor_tier`, `flat_type` and `month`.
-- `hedonic.REFERENCES = {"mrt_band": "over 1.2km", "lease_band": "90+", "floor_tier":
-  "Low (1-4)", "flat_type": "4 ROOM"}`. The month reference is the earliest month.
-- **A level with no sales** is absent from the output.
-- **A reference level with no sales** falls back to the most common level, with
-  `is_reference` marking which level was used.
-
-### Task 1: The fitting function (TDD)
-
-- [ ] Failing tests on a synthetic market with planted effects: MRT 0-400m +10%,
-  lease under 50 -15%, towns at -8%, 0% and +8%, and a noise sd of 0.03.
-  - Each planted effect is recovered within 1.5 percentage points.
-  - Reference rows have estimate 0 and are flagged.
-  - Town log estimates average to zero.
-  - A market with no "under 50" sales fits, and that level is absent.
-  - A market with no "over 1.2km" sales fits, with exactly one MRT reference.
-  - Every CI contains its estimate, and every std_error is greater than 0.
-- [ ] Implement `hedonic.py`. Tests pass.
-- [ ] Commit: `feat: hedonic fitting function with planted-answer tests`.
-
-### Task 2: The dbt Python model
-
-- [ ] Add the `lease_band` macro, `hedonic_sales`, `hedonic_coefficients.py`, the yml
-  tests, the singular test, `module_paths` and the requirements change.
-- [ ] Fixture build and real build both green; spot-check the real coefficients
-  against the naive findings.
-- [ ] Commit: `feat: hedonic coefficients as a dbt Python model`.
+- [ ] `fit_by_year` (TDD). Tests: a two-year planted market recovers the MRT effect in
+  each year, and a year too thin to identify is skipped while the others still fit.
+- [ ] The Python model, the three marts, the lease order macro and the tests. Fixture
+  and real builds green.
+- [ ] Renderer row filters (TDD). Publish the edition, render `FINDINGS.md`, add the
+  dashboard charts, and check them in the browser.
 
 ## Global constraints
 
