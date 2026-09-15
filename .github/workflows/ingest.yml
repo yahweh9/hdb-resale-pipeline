@@ -1,8 +1,16 @@
 name: Scheduled ingest
 
 # data.gov.sg republishes this dataset monthly. This run proves the pipeline still
-# works against the live API and publishes the result as a build artifact -- it is
+# works against the live APIs and publishes the result as a build artifact -- it is
 # not a hosted warehouse, and nothing downstream reads it.
+#
+# Every bronze input dbt reads is produced here, not assumed: the resale partitions,
+# the MRT archive and the block coordinates. The job has to build from an empty data/
+# directory, because on a monthly schedule that is what it will usually get (see the
+# cache step below).
+#
+# Needs two repository secrets, ONEMAP_EMAIL and ONEMAP_PASSWORD, for the geocoder.
+# DATA_GOV_SG_API_KEY is optional; without it data.gov.sg rate-limits harder.
 on:
   schedule:
     - cron: "0 18 5 * *" # 02:00 SGT on the 6th, a few days after the monthly refresh
@@ -15,6 +23,18 @@ jobs:
       DBT_PROFILES_DIR: .
 
     steps:
+      # Checked before anything else. Without it the job would spend minutes on the
+      # resale ingest and only then fail inside the geocoder with an auth error.
+      - name: Check the OneMap credentials are configured
+        env:
+          ONEMAP_EMAIL: ${{ secrets.ONEMAP_EMAIL }}
+          ONEMAP_PASSWORD: ${{ secrets.ONEMAP_PASSWORD }}
+        run: |
+          if [ -z "$ONEMAP_EMAIL" ] || [ -z "$ONEMAP_PASSWORD" ]; then
+            echo "::error::Add ONEMAP_EMAIL and ONEMAP_PASSWORD as repository secrets. dim_block needs block coordinates, and they can only come from OneMap."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -25,21 +45,47 @@ jobs:
       - name: Install
         run: pip install -r requirements.txt
 
-      # Restores the previous run's partitions so the ingest genuinely runs
-      # incrementally. The key is unique per run and the restore-key prefix picks up
-      # the newest earlier cache; a miss simply means a full load, which is correct
-      # rather than merely tolerable.
+      # An optimisation, not a dependency. GitHub evicts a cache entry nobody has read
+      # for seven days, so a monthly run will almost always miss and do a full load:
+      # every resale page, and a full geocode of about 9,700 addresses. The steps
+      # below are written for that case. A hit -- a manual rerun within the week --
+      # just makes the same steps incremental.
       - name: Restore the previous bronze layer
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: data/bronze
           key: bronze-${{ github.run_id }}
           restore-keys: bronze-
 
-      - name: Ingest
+      - name: Ingest resale transactions
         env:
           API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
         run: python ingest_hdb.py
+
+      # Fetched fresh every run rather than carried over. It is one SPARQL query, and
+      # the archive is deliberately unfiltered so silver re-decides which stations are
+      # open -- which only helps if the archive knows about the ones that just opened.
+      - name: Ingest MRT/LRT stations from Wikidata
+        run: python ingest_mrt_data.py
+
+      # Incremental: requests only addresses not already in hdb_coordinates.parquet.
+      # On a cache miss that is all of them. Unresolvable addresses are reported and
+      # skipped, not fatal; assert_block_geocoding_coverage fails the build if more
+      # than 2% of blocks end up without coordinates.
+      - name: Geocode block addresses via OneMap
+        env:
+          ONEMAP_EMAIL: ${{ secrets.ONEMAP_EMAIL }}
+          ONEMAP_PASSWORD: ${{ secrets.ONEMAP_PASSWORD }}
+        run: python onemap_utils.py --target hdb
+
+      # Saved as soon as bronze is complete, not at the end of the job. A failing data
+      # test says nothing about the bronze files, and a combined cache step would
+      # discard a half-hour geocode along with the failed build.
+      - name: Save the bronze layer
+        uses: actions/cache/save@v4
+        with:
+          path: data/bronze
+          key: bronze-${{ github.run_id }}
 
       - name: Build the warehouse and run the data tests
         run: |
