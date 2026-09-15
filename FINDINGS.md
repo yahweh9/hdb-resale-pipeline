@@ -1,49 +1,50 @@
 # Findings
 
-What 240,074 HDB resale transactions say, and — more carefully — what they do not.
+What 240,074 HDB resale sales say about flat prices, and, just as importantly, what they
+can't tell us.
 
 <!-- edition -->
 **Data cut:** resale transactions through **Sep 2026** (240,074 sales) · published **14 Sep 2026**
 <!-- /edition -->
 
-This is the analysis document. [README.md](README.md) is the overview, and
-[docs/ENGINEERING.md](docs/ENGINEERING.md) covers the pipeline that produces the data;
-this is about what came out of it. Every table here is generated from the published
-edition stamped above, and every number in it is reproducible from the warehouse
-`dbt build` creates.
+This is where I write up what I found. [README.md](README.md) is the overview, and
+[docs/ENGINEERING.md](docs/ENGINEERING.md) explains how the data is collected and
+processed. Every table on this page is filled in automatically from the same published
+numbers the dashboard uses, so the two can't disagree.
 
 ---
 
-## Method, and how to read the numbers
+## How to read the numbers
 
-- **Medians, never means.** The price distribution has a long right tail; a mean is
-  dragged by a handful of maisonettes and penthouses.
-- **Price per square metre, not price.** A 5-room flat is not expensive because it is
-  expensive, it is expensive because it is large. Normalising by area is what makes
-  towns and flat types comparable at all.
-- **2026 is nine months** (Jan–Sep, 18,007 sales), not a full year. Any 2026-vs-2025
-  comparison here is partial-year against full-year, which seasonality alone can move.
-- **Sample sizes are quoted throughout.** Two of the findings below rest on subsets
-  small enough to matter.
-- Source: [data.gov.sg](https://data.gov.sg) resale flat prices, Jan 2017 – Sep 2026.
-  Station locations from Wikidata; block coordinates geocoded via OneMap.
+- **Price per square metre, not price.** A 5-room flat costs more mostly because it's
+  bigger. Dividing by floor area lets me compare flats of different sizes fairly.
+- **Medians, not averages.** The median is the middle sale. A handful of very expensive
+  flats can drag an average up, but they barely move the median.
+- **2026 is only nine months** (January to September, 18,007 sales), so comparing it
+  with full years needs care.
+- **Sample sizes are shown**, so you can see when a number rests on only a few hundred
+  sales.
+- **Sources:** [data.gov.sg](https://data.gov.sg) resale flat prices, Jan 2017 to
+  Sep 2026. MRT station locations from Wikidata; block locations from OneMap.
 
-**The honest frame for everything below:** most tables are `GROUP BY` results.
-Location, lease, storey, flat type and age all correlate with one another, and a
-group-by estimates one effect at a time while the others move freely in the
-background. Where that changes an answer, it is said so explicitly — in one case it
-reverses it. Findings 2, 4 and 5 then show a hedonic model's like-for-like figures
-beside the group-by ones, and finding 7 is built on it; the model is described in
-[What would settle this](#what-would-settle-this).
+**Two kinds of comparison.** Most tables are *simple comparisons*: group the sales and
+take the median. They're easy to understand but can mislead, because location, lease,
+floor and flat type all move together. So for findings 2 to 5 I also show a
+*like-for-like* comparison from a pricing model, which compares flats that are the same
+in everything except the thing being measured. [The model, in plain
+English](#the-model-in-plain-english) explains how it works.
+
+**Ranges.** Model results come with a "95% range". Think of it as the model saying: "my
+best guess is +19%, and I'm confident the real answer is between +18% and +20%."
 
 ---
 
-## 1. The CBD premium is real, and it stops at about 5km
+## 1. Flats nearer the city centre cost more, but the effect fades after about 5km
 
-Median price per square metre, by 1km ring from the CBD (1.2839, 103.8515):
+Median price per square metre, by distance from the CBD, in 1km rings:
 
 <!-- table: cbd_gradient -->
-| km from CBD | Median psm | Sales |
+| Km from the CBD | Median price per sqm | Sales |
 |---|---|---|
 | 1 | S$8,889 | 1,558 |
 | 2 | S$7,416 | 4,538 |
@@ -66,32 +67,30 @@ Median price per square metre, by 1km ring from the CBD (1.2839, 103.8515):
 | 19 | S$4,314 | 6,410 |
 <!-- /table -->
 
-Three regimes, not one gradient:
+What stands out:
 
-- **1–5km: steep decay.** Down 33% over four kilometres.
-- **5–15km: a plateau.** Down only 13% over ten kilometres, and it *oscillates* — 7km
-  is dearer than 6km, 11km dearer than 10km, 14km dearer than 13km. Distance has
-  stopped explaining price.
-- **Past 16km: a second cliff**, into the far North and West.
+- **Within 5km, prices drop fast:** down about a third over four kilometres.
+- **From 5 to 15km, prices barely change** (down only 13% over ten kilometres), and they
+  zigzag: 7km is pricier than 6km, and 11km pricier than 10km. In this band, *which
+  town* a flat is in matters more than how far out it is.
+- **Past 16km there's a second drop**, into the far north and west.
 
-The non-monotonicity in the middle band is the finding. Inside the plateau, which
-town you are in matters more than how far out it is: Queenstown and Jurong East sit at
-similar radii and price differently. A model that treats distance-to-CBD as a single
-linear term will fit the centre and misprice everything from 5 to 15km, which is
-where most of Singapore's public housing is.
+Most HDB flats are in that 5 to 15km middle band, so a simple "further out means
+cheaper" rule would get most of Singapore wrong.
 
-**What this can't tell you:** why the plateau exists. Regional centres, MRT line
-geometry, estate age and BTO vintage all vary across it and none is isolated here.
+**What this can't tell me:** *why* the middle band is so flat. Regional centres, MRT
+lines and the age of estates all vary across it, and I haven't separated them.
 
 ---
 
-## 2. The MRT premium is not one number — it is four
+## 2. Living near an MRT station is worth more than it first looks
 
-Flats within 400m of a station sell at a **7.2% premium** overall (S$5,568 vs
-S$5,194 per sqm, n = 78,682 and 161,391). By distance band, against the farthest:
+A simple comparison says flats within 400m of a station sell for **7.2% more** per
+square metre than flats further away (S$5,568 against S$5,194, from 78,682 and 161,391
+sales). Split into distance bands and compared with flats over 1.2km away:
 
 <!-- table: mrt_premium_by_band -->
-| Distance to MRT | Sales | Median psm | vs over 1.2km |
+| Distance to MRT | Sales | Median price per sqm | Vs over 1.2km |
 |---|---|---|---|
 | 0-400m | 78,682 | S$5,568 | +10.1% |
 | 400-800m | 99,886 | S$5,288 | +4.6% |
@@ -99,12 +98,12 @@ S$5,194 per sqm, n = 78,682 and 161,391). By distance band, against the farthest
 | over 1.2km | 17,905 | S$5,055 | +0.0% |
 <!-- /table -->
 
-Almost all of the difference sits inside 800m; beyond that the bands are within about
-1% of each other. That headline is close to meaningless on its own, though, because
-station proximity is entangled with CBD proximity. Splitting by ring:
+Almost all of the difference is within 800m. But this simple view mixes two things up,
+because being near a station is tangled up with being near the city centre. Splitting
+by distance from the CBD:
 
 <!-- table: mrt_premium_by_cbd_ring -->
-| Distance from CBD | Near MRT | Not near | Premium |
+| Distance from the CBD | Within 400m of MRT | Further away | Difference |
 |---|---|---|---|
 | under 5km | S$7,504 | S$6,394 | +17.4% |
 | 5-10km | S$6,098 | S$5,650 | +7.9% |
@@ -112,20 +111,17 @@ station proximity is entangled with CBD proximity. Splitting by ring:
 | 15km+ | S$5,000 | S$4,743 | +5.4% |
 <!-- /table -->
 
-The premium is **more than seven times larger in the centre than at 10–15km**, and the
-aggregate 7.2% is an artefact of mixing them.
+Near the centre, the station premium is **more than seven times bigger** than at 10 to
+15km. I expected the opposite: surely a station matters more out in the suburbs, where
+there are fewer alternatives? My best guess is that near the centre, "near a station"
+also means "near everything else", so the 17.4% is paying for the whole package rather
+than the station alone. I haven't tested that.
 
-This runs against intuition — you would expect a station to be worth *more* on the
-periphery, where the alternatives are worse. One reading is that in the centre a
-station is bundled with everything else that is central, so the 17.4% is measuring the
-bundle rather than the station. That reading is untested here.
-
-**Holding the rest constant.** The hedonic model (see
-[What would settle this](#what-would-settle-this)) compares flats in the same town, with
-the same lease band, storey, flat type and month:
+**Comparing like with like.** The pricing model compares flats in the same town, with
+the same lease, floor, flat type and month of sale:
 
 <!-- table: mrt_model_vs_naive -->
-| Distance to MRT | Sales | Naive (group-by) | Model (like for like) | 95% interval |
+| Distance to MRT | Sales | Simple comparison | Like for like | 95% range |
 |---|---|---|---|---|
 | 0-400m | 78,682 | +10.1% | +18.9% | +18.1% to +19.8% |
 | 400-800m | 99,886 | +4.6% | +12.9% | +12.1% to +13.6% |
@@ -133,13 +129,15 @@ the same lease band, storey, flat type and month:
 | over 1.2km | 17,905 | +0.0% | +0.0% | +0.0% to +0.0% |
 <!-- /table -->
 
-Like for like, the premium is roughly double the group-by's, and it keeps falling with
-distance instead of flattening past 800m. That direction means the flats far from a
-station carry other advantages — town, lease or storey — which the group-by credited to
-distance. Nor is the premium one number over time:
+Like for like, being within 400m of a station is worth about **19%**, roughly double
+the simple comparison, and the premium keeps shrinking with distance. That means the
+flats far from stations had other things going for them (a better town, more lease
+left, a higher floor) which the simple comparison wrongly credited to distance.
+
+The premium has also changed over time:
 
 <!-- table: mrt_premium_by_year -->
-| Year | 0-400m vs over 1.2km | 95% interval |
+| Year | Within 400m vs over 1.2km, like for like | 95% range |
 |---|---|---|
 | 2017 | +21.9% | +20.6% to +23.2% |
 | 2018 | +24.4% | +22.9% to +25.9% |
@@ -153,19 +151,18 @@ distance. Nor is the premium one number over time:
 | 2026 | +17.3% | +16.2% to +18.4% |
 <!-- /table -->
 
-**What this can't tell you:** whether the model's figure is the value of the station
-itself. Within a town, near-station blocks can still differ in ways the model cannot
-see: amenity density, block age within a lease band, and walking routes — distances
-here are straight-line.
+**What this can't tell me:** whether this is the value of the station itself. Blocks
+near a station might also be near more shops or have better walking routes, which the
+model can't see. Distances are straight lines, not walking routes.
 
 ---
 
-## 3. The storey premium is real, and most of the headline is location and lease
+## 3. High floors cost more, but much less than they seem to
 
-Comparing floor tiers directly, for 4-room flats:
+For 4-room flats, comparing floor levels directly:
 
 <!-- table: storey_naive -->
-| Tier | Median psm (4-room) | Naive premium |
+| Floor level | Median price per sqm (4-room) | Vs a low floor |
 |---|---|---|
 | Low (1-4) | S$5,000 | +0.0% |
 | Mid (5-9) | S$5,288 | +5.8% |
@@ -173,47 +170,46 @@ Comparing floor tiers directly, for 4-room flats:
 | Ultra-High (20+) | S$9,140 | +82.8% |
 <!-- /table -->
 
-An 83% premium for a high floor is not credible, and it is not what is happening.
-Blocks tall enough to have a 20th storey are newer and concentrated in expensive
-places, so a raw comparison credits the storey with the neighbourhood.
+An 83% premium for a high floor isn't believable. Blocks tall enough to have a 20th
+floor tend to be newer and in pricier places, so a simple comparison gives the floor
+credit for the neighbourhood.
 
-Comparing each tier only against **low floors in the same town, the same flat type and
-the same year** (189 such comparison cells for the top tier, minimum 15 sales per
-cell):
+A fairer comparison sets each floor level against **low floors in the same town, flat
+type and year** (189 such groups for the top floors, each with at least 15 sales):
 
 <!-- table: storey_controlled -->
-| Tier | Controlled multiplier | Comparison cells |
+| Floor level | Price vs a low floor (1.00 = same) | Groups compared |
 |---|---|---|
-| Low (1-4) | 1.000 | 888 |
-| Mid (5-9) | 1.052 | 741 |
-| High (10-19) | 1.118 | 832 |
-| Ultra-High (20+) | 1.513 | 189 |
+| Low (1-4) | 1.00 | 888 |
+| Mid (5-9) | 1.05 | 741 |
+| High (10-19) | 1.12 | 832 |
+| Ultra-High (20+) | 1.51 | 189 |
 <!-- /table -->
 
-**The 20+ premium falls from 83% to 51%.** Around a third of the apparent storey
-effect was location. The remaining 51% is large and consistent across cells, but it
-does not survive a stricter comparison.
+That brings the 20+ floor premium down **from 83% to 51%**. About a third of the gap was
+really about location.
 
-**Holding lease constant as well, most of the rest goes.** Tall blocks are also newer:
-82% of sales on the 20th storey or above have 80 or more years of lease left, against
-26% of sales on low floors. The hedonic model, which also holds the lease band and MRT
-band constant, puts 20+ storeys at **about 20% above a low floor** (95% interval 19.5%
-to 21.4%), high floors at about 8% and mid floors at about 4%. That is still a real
-premium for height, and well under half of what the town-controlled cells show.
+**Holding the lease constant as well, most of the rest disappears.** Tall blocks are
+also newer: 82% of sales on the 20th floor or above have 80 or more years of lease left,
+against 26% of sales on low floors. The pricing model, which also compares flats with
+the same lease and MRT distance, puts 20+ floors at **about 20% above a low floor** (95%
+range 19.5% to 21.4%), high floors (10 to 19) at about 8%, and mid floors (5 to 9) at
+about 4%. Height is still worth something, just well under half of what the town
+comparison suggested.
 
-**What this can't tell you:** the controls are still coarse — town and lease band, not
-block. Within those, tall blocks can differ from short ones in views, design and upkeep,
-and some of that is being credited to the storey.
+**What this can't tell me:** views, block design and upkeep. Those differ between tall
+and short blocks too, and some of that may still be counted as "floor".
 
 ---
 
-## 4. Lease decay comes out backwards, and that is the most useful result here
+## 4. Older flats looked more expensive, until I compared like with like
 
-Every buyer in Singapore knows a shorter lease should mean a cheaper flat. The data,
-grouped naively for 4-room flats, says otherwise:
+Everyone in Singapore knows a shorter lease should mean a cheaper flat. But when I
+grouped 4-room flats by how many years of lease they had left, the data seemed to say
+otherwise:
 
 <!-- table: lease_naive_4room -->
-| Remaining lease (years) | Median psm | Sales |
+| Lease left (years) | Median price per sqm | Sales |
 |---|---|---|
 | 80-90 | S$6,413 | 16,150 |
 | 90+ | S$6,129 | 30,271 |
@@ -223,14 +219,14 @@ grouped naively for 4-room flats, says otherwise:
 | 60-70 | S$4,709 | 23,382 |
 <!-- /table -->
 
-The shortest leases come **third most expensive**, above three bands with more lease
-left, and 80–90 year leases sell for more than 90+. Taken at face value this says lease
-decay does not exist, which is false.
+Flats with **under 50 years left came out third most expensive**, ahead of three groups
+with more lease left, and 80 to 90 year leases even beat 90+. Taken at face value, that
+says a shrinking lease doesn't lower the price at all, which isn't true.
 
-It is a confound, and it is measurable:
+The explanation is *where* those older flats are:
 
 <!-- table: lease_confound_4room -->
-| Remaining lease (years) | Median km to CBD | % in mature estates | Sales |
+| Lease left (years) | Typical distance to the CBD | % in mature estates | Sales |
 |---|---|---|---|
 | under 50 | 6.2 km | 93% | 638 |
 | 50-60 | 10.0 km | 76% | 10,220 |
@@ -240,28 +236,27 @@ It is a confound, and it is measurable:
 | 90+ | 14.2 km | 25% | 30,271 |
 <!-- /table -->
 
-Flats with under 50 years left sit **less than half as far from the CBD** as any band
-with 60 or more years left, and 93% of them are in mature estates. It is a gradient, not
-an outlier: from 70–80 years down to under 50, the median distance to the CBD falls from
-14.7km to 6.2km and the share in mature estates rises from 29% to 93%. The oldest flats
-are in the oldest estates, and the oldest estates are the central ones. The five towns
-supplying most of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa,
-Queenstown and Marine Parade — every one of them central and mature.
+Flats with under 50 years left sit **less than half as far from the CBD** as any group
+with 60 or more years left, and 93% of them are in mature estates. The pattern is
+steady: going from 70 to 80 years left down to under 50, the typical distance to the CBD
+falls from 14.7km to 6.2km, and the share in mature estates rises from 29% to 93%. The
+oldest flats are in the oldest estates, and the oldest estates are the central ones. The
+five towns with most of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa,
+Queenstown and Marine Parade, all of them central and mature.
 
-**Location is worth more than the lease is losing.** The lease effect is real; this
-grouping simply cannot see it, because the variable that would reveal it is almost
-perfectly correlated with the one hiding it.
+In other words, **the location is worth more than the lease is losing.** The effect of
+the lease is real; this simple grouping just can't see it.
 
-This is included because it is the clearest demonstration in the project of why a
-dashboard needs a document beside it. The chart would have been correct, legible, and
-would have led a reader to exactly the wrong conclusion.
+This is my favourite result in the project, because it shows why a chart needs an
+explanation beside it. The chart would have been accurate and easy to read, and it
+would have led readers to exactly the wrong conclusion.
 
-**Holding location constant, the lease effect appears.** The hedonic model compares flats
-in the same town and MRT band, with the same storey, flat type and month. It covers all
-flat types, so its group-by column differs from the 4-room tables above:
+**Comparing like with like, the lease effect shows up.** The model compares flats in the
+same town and MRT distance band, with the same floor, flat type and month. It covers all
+flat types, so its simple-comparison column differs from the 4-room tables above:
 
 <!-- table: lease_model_vs_naive -->
-| Lease remaining (years) | Sales | Naive (group-by) | Model (like for like) | 95% interval |
+| Lease left (years) | Sales | Simple comparison | Like for like | 95% range |
 |---|---|---|---|---|
 | under 50 | 7,700 | -14.3% | -42.7% | -43.4% to -42.0% |
 | 50-60 | 38,132 | -15.1% | -33.0% | -33.5% to -32.5% |
@@ -271,21 +266,22 @@ flat types, so its group-by column differs from the 4-room tables above:
 | 90+ | 54,355 | +0.0% | +0.0% | +0.0% to +0.0% |
 <!-- /table -->
 
-Like for like, value falls at every step as the lease runs down, to about 43% below a
-90+ year lease. The group-by put the shortest leases at only 14% below.
+Like for like, value falls at every step as the lease runs down, to about **43% below**
+a flat with 90+ years left. The simple comparison put the shortest leases only 14%
+below.
 
-**What this can't tell you:** the lease separately from the building's age. Remaining
-lease and age are the same clock read in opposite directions, so each figure is the
-combined price of an older flat with less lease left.
+**What this can't tell me:** the lease separately from the age of the building.
+Remaining lease and age are the same clock read in opposite directions, so each number
+is the combined price of an older flat with less lease left.
 
 ---
 
-## 5. Prices rose 52%, almost all of it after 2020
+## 5. Prices rose by more than half, almost all of it after 2020
 
 Median price per square metre, all flat types:
 
 <!-- table: price_by_year -->
-| Year | Median psm | Sales | Mature | Non-mature | Mature premium |
+| Year | Median price per sqm | Sales | Mature estates | Non-mature estates | How much more mature estates cost |
 |---|---|---|---|---|---|
 | 2017 | S$4,282 | 20,509 | S$4,851 | S$3,944 | 23.0% |
 | 2018 | S$4,209 | 21,561 | S$4,749 | S$3,859 | 23.1% |
@@ -301,16 +297,17 @@ Median price per square metre, all flat types:
 
 <sub>2026 is nine months.</sub>
 
-The shape matters more than the total. **2017–2019 was flat and slightly declining.**
-The entire 52% rise happened from 2020 onward, with the sharpest single jump in 2021
-(+12.8%), alongside the highest transaction volume in the series.
+**2017 to 2019 was flat, even slightly down.** The whole 52% rise came from 2020
+onwards, with the biggest single jump in 2021 (+12.8%), which was also the busiest year
+for sales.
 
-The median moves whenever the *mix* of flats sold moves. The model's month terms price
-the same flat — same town, MRT band, lease band, storey and flat type — month by month
-(last month of each year, Jan 2017 = 100):
+But a median can move just because *different kinds of flats* happened to sell that
+year. The model tracks the price of the same kind of flat (same town, MRT distance,
+lease, floor and flat type) month by month. Here is the last month of each year, with
+January 2017 set to 100:
 
 <!-- table: price_index_by_year -->
-| Month | Median psm index | Quality-adjusted index | 95% interval |
+| Month | Median price (Jan 2017 = 100) | Like for like (Jan 2017 = 100) | 95% range |
 |---|---|---|---|
 | 2017-12 | 99.0 | 98.8 | 98.0 to 99.6 |
 | 2018-12 | 97.3 | 98.1 | 97.2 to 99.0 |
@@ -324,31 +321,31 @@ the same flat — same town, MRT band, lease band, storey and flat type — mont
 | 2026-09 | 149.0 | 157.5 | 155.8 to 159.3 |
 <!-- /table -->
 
-Like for like, prices rose about 57% to Sep 2026, and they did not flatten in 2026: the
-median's pause came from which flats sold, not from what flats were worth.
+Like for like, prices rose about **57%** by September 2026, and they kept rising in
+2026. The median's pause in 2026 came from which flats sold, not from what flats were
+worth.
 
-Alongside it, the gap between mature and non-mature estates (the last column above)
-**collapsed and then partially recovered**.
+The gap between mature and non-mature estates (the last column of the first table)
+**shrank and then partly recovered**. Non-mature estates rose faster during the boom,
+squeezing the mature-estate premium from 23% to 6% by 2023, before it widened again.
+Because it's a ratio between the two, it's less affected by the overall rise in prices.
 
-Non-mature estates rose faster through the boom, compressing a 23% premium to 6% by
-2023, before it widened again. Because this is a *ratio*, it partly controls for the
-market-wide rise — whatever drove prices up drove both sides up.
-
-**What this can't tell you:** anything causal. This period contains a pandemic, a
-construction shutdown that delayed BTO completions, an interest-rate cycle and several
-rounds of cooling measures. None of them is in this dataset.
+**What this can't tell me:** why. This period includes a pandemic, delayed BTO
+completions, changing interest rates and several rounds of cooling measures, and none of
+those are in this dataset.
 
 ---
 
-## 6. A hypothesis that was tested and did not hold
+## 6. An idea I tested that turned out to be wrong
 
-**Hypothesis:** as prices rose, demand would shift toward larger flats in the cheaper
-North and West, while central buyers moved to smaller units — a regional divergence.
+**My idea:** as prices rose, buyers in the cheaper north and west would move to bigger
+flats, while buyers in central areas would move to smaller ones.
 
-Share of each region's sales that are 5-room, Executive or Multi-Generation:
+Share of each region's sales that are large flats (5-room, Executive or
+Multi-Generation):
 
 <!-- table: large_flat_share -->
-| Region | 2017 | 2021 | Latest year | Change |
+| Region | 2017 | 2021 | Latest year | Change since 2017 |
 |---|---|---|---|---|
 | Central | 22.9% | 23.6% | 17.6% | -5.3 pts |
 | East | 37.6% | 39.2% | 35.0% | -2.6 pts |
@@ -357,29 +354,27 @@ Share of each region's sales that are 5-room, Executive or Multi-Generation:
 | West | 34.2% | 38.3% | 33.4% | -0.8 pts |
 <!-- /table -->
 
-**Not supported.** Every region moves in the same direction — up to 2021, down by 2026
-— and the largest fall is in Central, the opposite of the prediction. There is no
-regional divergence to find.
+**It didn't hold.** Every region moved the same way, up until 2021 and down since, and
+the biggest drop was in the central region, the opposite of what I predicted.
 
-What is there instead is uniform: the share of large-flat sales fell everywhere as
-prices rose. That is consistent with an affordability constraint acting market-wide
-rather than a regional preference shift, though this data cannot distinguish
-constrained buyers from changed tastes.
+What the data shows instead is that large-flat sales fell *everywhere* as prices rose.
+That fits with buyers across the island being stretched by affordability, though this
+data can't tell "couldn't afford a bigger flat" apart from "didn't want one".
 
-A negative result is reported here because it was tested. The alternative — running
-five hypotheses and publishing the three that worked — is how analysis becomes
-decoration.
+I've kept this in because I tested it. Only reporting the ideas that worked would make
+the analysis look better than it really is.
 
 ---
 
-## 7. Which blocks sell above what their attributes justify
+## 7. Which blocks sell for more (or less) than expected
 
-The model has to earn this section first. Each year's model was fitted on 80% of blocks
-and asked to price the other 20%, which it never saw, against a lazy guess: the median
-price per sqm for that town and flat type.
+First, I had to check the model is actually good at pricing flats. For each year, it
+learned from 80% of blocks and then priced the sales in the other 20%, which it had
+never seen. I compared it with a simple guess: the median price per square metre for
+that town and flat type.
 
 <!-- table: model_validation -->
-| Year | Unseen sales | Model: median miss | Guess: median miss | Model: within 10% | Guess: within 10% |
+| Year | Sales it hadn't seen | Model: typical miss | Simple guess: typical miss | Model: within 10% | Simple guess: within 10% |
 |---|---|---|---|---|---|
 | 2017 | 4,126 | 6.5% | 7.9% | 70.1% | 59.4% |
 | 2018 | 4,294 | 6.8% | 8.2% | 67.6% | 57.6% |
@@ -394,15 +389,16 @@ price per sqm for that town and flat type.
 | All years | 46,416 | 6.0% | 8.7% | 73.2% | 55.6% |
 <!-- /table -->
 
-A typical unseen sale is priced within about 6%, against about 9% for the guess, and the
-model is closer in every year. A dbt test fails the build if that ever stops being true.
+The model prices a typical sale in an unseen block within about **6%**, against about
+**9%** for the simple guess, and it does better in every year. An automatic check fails
+the build if that ever stops being true.
 
-Each sale in the last 36 months is then compared with its own year's prediction, and
-every block's sales are averaged. A block is called above or below only with at least 10
-sales and a 95% interval clear of zero:
+Then I compared every sale from the last 36 months with the model's expected price, and
+averaged the difference for each block. A block only gets a verdict if it has at least
+10 sales and its whole 95% range sits above zero or below zero:
 
 <!-- table: fair_value_verdicts -->
-| Verdict | Blocks | Their sales |
+| Verdict | Blocks | Sales in those blocks |
 |---|---|---|
 | above | 793 | 13,836 |
 | below | 1,008 | 15,817 |
@@ -410,10 +406,10 @@ sales and a 95% interval clear of zero:
 | not enough sales | 6,782 | 34,822 |
 <!-- /table -->
 
-Furthest above what their attributes justify:
+Blocks selling furthest above what their features would suggest:
 
 <!-- table: fair_value_above -->
-| Block | Town | Sales | vs model | 95% interval |
+| Block | Town | Sales | Vs expected price | 95% range |
 |---|---|---|---|---|
 | 87 ZION RD | BUKIT MERAH | 10 | +34.8% | +31.0% to +38.8% |
 | 182 JELEBU RD | BUKIT PANJANG | 12 | +31.9% | +23.0% to +41.4% |
@@ -430,7 +426,7 @@ Furthest above what their attributes justify:
 Furthest below:
 
 <!-- table: fair_value_below -->
-| Block | Town | Sales | vs model | 95% interval |
+| Block | Town | Sales | Vs expected price | 95% range |
 |---|---|---|---|---|
 | 989A JURONG WEST ST 93 | JURONG WEST | 14 | -23.6% | -25.5% to -21.8% |
 | 987A JURONG WEST ST 93 | JURONG WEST | 11 | -21.0% | -23.5% to -18.4% |
@@ -444,70 +440,74 @@ Furthest below:
 | 91 LOR 3 TOA PAYOH | TOA PAYOH | 14 | -18.6% | -22.1% to -15.0% |
 <!-- /table -->
 
-**What this can't tell you:** why. A block's premium is everything about it the model
-does not see — flat design (the model has no flat model, so premium and DBSS designs
-land here), block age within a lease band, views, upkeep, a new amenity next door.
-"Above" means buyers pay more for this block than for its measured attributes, not that
-it is overpriced.
+**What this can't tell me:** why. A block's premium is everything about it the model
+doesn't measure: the flat design (the model doesn't know about premium or DBSS designs),
+the exact age of the block, the views, the upkeep, a new mall next door. "Above" means
+buyers pay more than the block's measured features explain. It doesn't mean the block
+is overpriced.
 
 ---
 
-## What would settle this
+## The model, in plain English
 
-Every caveat above has the same shape: a `GROUP BY` estimates one effect while the
-others move freely. The standard answer is a **hedonic pricing model** — estimate all
-of them at once, so each coefficient is read holding the rest constant:
+Simple comparisons change one thing at a time while everything else shifts in the
+background. The fix is a **hedonic pricing model**: a model that prices a flat by
+adding up what each of its features is worth. It's the same idea as working out what
+cheese adds to a burger's price by looking at lots of burgers with different toppings.
+
+Mine estimates all of these at once, so each result holds the others constant:
 
 ```
-log(price_psm) ~ town + mrt_band + lease_band + floor_tier + flat_type + month
+log(price per sqm) ~ town + MRT distance band + lease band + floor level + flat type + month
 ```
 
-**It is now built** ([hedonic.py](hedonic.py)), as a dbt Python model over the gold star
-schema. Distance to the CBD is left out: 96.8% of its variation lies between towns, so it
-cannot be separated from the town term. Distance and lease enter as bands, standard
-errors are clustered by block, and the fitting code must recover planted effects from
-synthetic markets before it runs on real sales.
+In plain terms:
 
-It turns "flats near stations sell for 7.2% more" into "being within 400m of a station
-is worth about 19%, in the same town, with the same lease, storey, flat type and month".
-Findings 2, 4 and 5 carry its tables beside the group-by ones, and finding 3 quotes its
-storey effects.
+- **Using the log of the price** means results come out as percentages ("19% more")
+  rather than fixed dollar amounts, because a station adds more dollars to an expensive
+  flat than to a cheap one.
+- **Distance and lease are grouped into bands** (like 0 to 400m, or 60 to 70 years), so
+  the effects don't have to follow a straight line.
+- **Distance to the CBD is left out.** Almost all of it (96.8%) is already explained by
+  which town a flat is in, so the model can't separate the two.
+- **Sales in the same block are treated as related**, not independent, so the model
+  doesn't become overconfident. The technical term is "clustered standard errors".
+- **It's tested before it touches real data:** the code has to find effects that were
+  deliberately planted in made-up data.
 
-On blocks it never saw it prices a typical sale within about 6% (finding 7). It still
-assumes each effect is the same everywhere — a station is worth the same in Bishan as in
+The code is in [hedonic.py](hedonic.py). The model turns "flats near stations sell for
+7.2% more" into "being within 400m of a station is worth about 19%, for a flat in the
+same town, with the same lease, floor, flat type and month". It does still assume each
+effect is the same everywhere, so a station counts for the same in Bishan as in
 Woodlands.
 
 ---
 
-## Limitations
+## What this data can't tell you
 
-**No repeat-sales index is possible from this source.** The dataset carries no unit
-identifier — there is no way to tell that the same flat sold in 2018 and again in 2024.
-Repeat-sales indices (the method behind Case-Shiller) control for property quality
-automatically by comparing a home to *itself*, which is exactly what would fix most of
-the confounds above. That option is closed here, and no amount of modelling reopens it.
+**Whether the same flat sold twice.** The dataset has no ID for individual flats, so
+there's no way to see that one flat sold in 2018 and again in 2024. Comparing a flat
+with itself would be the best way to measure price changes, but this data doesn't allow
+it.
 
-**No forecasting.** Nine years of history cannot support a ten-year projection, and
-this series is driven by policy — cooling measures, BTO supply, grants, income
-ceilings — which are decisions, not processes. Nothing in the 2017–2020 data predicts
-the 2021 inflection. A forecast chart would look authoritative and mean nothing.
+**The future.** I don't make forecasts. Nine years of history isn't enough, and HDB
+prices depend heavily on government policy (cooling measures, BTO supply, grants), which
+are decisions rather than patterns. Nothing in the 2017 to 2020 data predicted the jump
+in 2021.
 
-**Coverage.** Resale transactions only: no BTO prices, no rentals, no private market.
-HDB housing is where the large majority of Singapore residents live, but conclusions
-here do not generalise to the private market, which is priced differently and is not
-in this dataset.
+**Other kinds of housing.** This covers HDB resale flats only: no new BTO flats, no
+rentals and no private property, so the results don't carry over to private housing.
 
-**Geocoding.** All 9,744 block addresses resolved via OneMap with zero failures, so
-there is no spatial coverage gap. Distances are great-circle, not walking routes — a
-block 400m from a station across an expressway is not 400m on foot.
+**Walking distance.** Every block address was matched to a map location (all 9,744,
+with none missing), but distances are straight lines. A block 400m from a station across
+an expressway is not a 400m walk.
 
-**Lease parsing.** `remaining_lease` arrives in two formats in the same column
-(`'61 years 04 months'` and a bare number of years). Both are parsed to integer months;
-a range test in the dbt build fails the pipeline if any value falls outside 0–1,188.
+**Lease details.** The remaining lease arrives in two different formats in the raw data.
+Both are converted to months, and an automatic check stops the pipeline if any value
+looks impossible.
 
 ---
 
-*Generated tables come from the committed edition in `published/`, stamped at the top
-of this page. To reproduce from the API, follow
-[Running it](docs/ENGINEERING.md#running-it): ingest, `dbt build`, then
-`python publish_edition.py && python render_findings.py`.*
+*The tables on this page are generated from the published numbers in `published/`,
+dated at the top. To rebuild everything from scratch, see
+[Running it](docs/ENGINEERING.md#running-it).*

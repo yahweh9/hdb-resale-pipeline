@@ -1,17 +1,16 @@
-# HDB Resale Price Pipeline
+# What really drives HDB resale prices?
 
 [![CI](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml)
 
-Every HDB resale transaction since 2017, taken from a live public API to a tested
-warehouse, and then through a pricing model that compares flats like for like.
+I built this project while learning data analytics. I wanted to practise on a real,
+messy dataset rather than a tidy tutorial one, and Singapore's HDB resale records are a
+good fit: they're public, updated every month, and easy to relate to.
 
-It is built to show both halves of the job:
-
-- **Data engineering:** incremental, idempotent ingestion, a dbt star schema on DuckDB,
-  and data tests that fail the build.
-- **Data analytics:** a hedonic pricing model, validated on blocks it never saw, and a
-  findings document whose every table is generated from the same published numbers as
-  the dashboard.
+The question I kept coming back to was simple. When one flat sells for more than
+another, how much of that is down to the flat itself (its location, its remaining lease,
+its floor) and how much is just down to *which* flats happened to sell? Answering it
+properly meant collecting the data, cleaning it, comparing flats like for like, and
+checking that the answers hold up.
 
 <!-- edition -->
 **Data cut:** resale transactions through **Sep 2026** (240,074 sales) · published **14 Sep 2026**
@@ -21,88 +20,133 @@ It is built to show both halves of the job:
 
 ---
 
-## What the data says
+## What I found
 
-The full analysis, with sample sizes and what each result cannot tell you, is in
+The full write-up, including what each result *can't* tell you, is in
 [FINDINGS.md](FINDINGS.md).
 
-- **Being near a station is worth about 19%, not 10%.** A group-by puts flats within
-  400m of an MRT station 10.1% above those over 1.2km away. Comparing flats in the
-  same town, with the same lease, storey, flat type and month, the premium is 18.9%.
-  ([Finding 2](FINDINGS.md#2-the-mrt-premium-is-not-one-number--it-is-four))
-- **Lease decay comes out backwards until location is held constant.** Grouped
-  naively, 4-room flats with under 50 years left are the third most expensive lease
-  band, because they are almost all in central, mature estates. Like for like, a
-  lease that short costs about 43%.
-  ([Finding 4](FINDINGS.md#4-lease-decay-comes-out-backwards-and-that-is-the-most-useful-result-here))
-- **Prices rose about 57% like for like, nearly all of it after 2020.** The median's
-  pause in 2026 came from which flats sold, not from what flats were worth.
-  ([Finding 5](FINDINGS.md#5-prices-rose-52-almost-all-of-it-after-2020))
-- **The model earns its place.** On blocks held out of the fit, it prices a typical
-  sale within 6.0%, against 8.7% for a town x flat type median, and it is closer in
-  every year. A dbt test fails the build if that stops being true.
-  ([Finding 7](FINDINGS.md#7-which-blocks-sell-above-what-their-attributes-justify))
-- **One hypothesis was tested and did not hold,** and is reported anyway: demand for
-  large flats did not diverge by region.
-  ([Finding 6](FINDINGS.md#6-a-hypothesis-that-was-tested-and-did-not-hold))
+- **Living near an MRT station is worth about 19% more per square metre, not 10%.**
+  A simple comparison undersells it, because flats far from stations often have other
+  things going for them, like a better town or a newer lease.
+  ([Finding 2](FINDINGS.md#2-living-near-an-mrt-station-is-worth-more-than-it-first-looks))
+- **Older flats looked *more* expensive at first.** That's because the oldest flats are
+  in central, mature estates. Comparing like with like, a flat with under 50 years of
+  lease left is worth about 43% less than one with 90+ years.
+  ([Finding 4](FINDINGS.md#4-older-flats-looked-more-expensive-until-i-compared-like-with-like))
+- **A high floor is worth about 20%, not the 83% a simple comparison shows.** Tall
+  blocks tend to be newer and in pricier areas.
+  ([Finding 3](FINDINGS.md#3-high-floors-cost-more-but-much-less-than-they-seem-to))
+- **Prices rose about 57% since 2017, almost all of it after 2020.**
+  ([Finding 5](FINDINGS.md#5-prices-rose-by-more-than-half-almost-all-of-it-after-2020))
+- **One of my ideas turned out to be wrong**, and I kept it in: buyers in different
+  regions did not move to bigger or smaller flats in different ways.
+  ([Finding 6](FINDINGS.md#6-an-idea-i-tested-that-turned-out-to-be-wrong))
+
+To check the model wasn't just telling me what I wanted to hear, I tested it on blocks
+it had never seen. It priced a typical sale within 6%, compared with 9% for a simple
+guess based on the town and flat type
+([Finding 7](FINDINGS.md#7-which-blocks-sell-for-more-or-less-than-expected)).
 
 ---
 
-## How it works
+## How it works, in plain English
+
+1. **Collect.** A Python script downloads every resale transaction from data.gov.sg.
+   Two more add MRT station locations and a map location for every HDB block.
+2. **Clean and organise.** The raw data is messy (every column arrives as text, and
+   some fields come in two formats), so SQL models in dbt turn it into tidy tables
+   stored in DuckDB, a small database that runs on a laptop.
+3. **Compare like with like.** A pricing model (a "hedonic" model) works out what each
+   feature of a flat is worth while holding everything else the same, a bit like
+   working out what cheese adds to a burger by comparing lots of burgers.
+4. **Check.** Over 100 automatic data checks, plus tests for the Python code, run
+   every time the project changes, so a mistake stops the build instead of reaching the
+   results.
+5. **Share.** The final numbers are saved into one folder. The dashboard and the
+   findings write-up both read from it, so they always show the same numbers.
 
 ```
  data.gov.sg · Wikidata · OneMap
               |
               v
- Python ingest -> bronze parquet, one immutable partition per month
+     download the raw data
               |
               v
- DuckDB + dbt: silver -> gold star schema -> hedonic model -> 13 marts
-              |                              (dbt Python models)
+  clean and organise it (dbt + DuckDB)
+              |
               v
- publish_edition.py -> published/  (committed: the numbers a reader sees)
+  compare like with like (pricing model)
+              |
+              v
+  save the published numbers
               |
       +-------+--------+
       v                v
- dashboard.py    the tables in FINDINGS.md
+  dashboard       FINDINGS.md
 ```
-
-| | Engineering | Analytics |
-|---|---|---|
-| **Built** | Month-partitioned ingest with a high-water mark derived from the data; a star schema with the spatial attributes on the block dimension | `log(price_psm) ~ town + MRT band + lease band + storey + flat type + month`, fitted across all years (a price index) and per year |
-| **Tested** | 105 dbt data tests; CI builds the whole warehouse from a committed fixture on every PR | Planted-answer tests on synthetic markets; build-failing gates for validation, fair value and coefficient sanity |
-| **Served** | A committed edition, so the dashboard runs with no warehouse or API key | Every FINDINGS table generated and checked in CI; Explore's pandas checked against the SQL marts |
-
-In numbers: 240,074 transactions, 9,744 geocoded blocks, 181 stations, 26 dbt models,
-105 data tests and 90 pytest tests, all run on every pull request.
 
 ---
 
-## Run it
+## Screenshots
 
-The dashboard reads the committed edition, so it needs no API key, ingest or warehouse:
+**The Explore page.** Filter by year, flat type, region or town and the charts
+recalculate.
+
+![The Explore page of the dashboard](docs/img/explore.png)
+
+**How the data flows.** Each box is one step in dbt, from the raw data on the left to
+the final published tables and checks on the right.
+
+![The dbt lineage graph](docs/img/dbt-lineage.png)
+
+**The automatic checks passing.** GitHub runs every step on each change: the tests,
+building the database, and checking the write-up matches the published numbers.
+
+![A passing GitHub Actions run](docs/img/ci-run.png)
+
+---
+
+## Try it
+
+The dashboard runs from the published numbers in this repo, so you don't need an API key
+or to download anything first:
 
 ```bash
 pip install -r requirements.txt
 streamlit run dashboard.py
 ```
 
-It has two pages: **Findings**, the published figures with no filters, and **Explore**,
-the same descriptive figures recomputed under your own filters.
-
-Rebuilding everything from the API, and running the pipeline offline as CI does, are
-covered in [Running it](docs/ENGINEERING.md#running-it).
+It has two pages: **Findings**, with the main results, and **Explore**, where you can
+filter the data yourself.
 
 ---
 
-## Documents
+## Tools I used
 
-| Document | For |
+Python, SQL, DuckDB, dbt, pandas, statsmodels, Streamlit and GitHub Actions.
+
+Built with the help of an AI coding assistant.
+
+---
+
+## What I'd like to add next
+
+- **Distance to popular primary schools.** Living within 1km of a school matters for
+  Primary One registration, so it's probably one of the biggest price factors I'm
+  missing.
+- **A test of forecasting.** Checking how badly a simple forecast would have done in
+  past years, to show why I don't make predictions here.
+
+---
+
+## More detail
+
+| Document | What's in it |
 |---|---|
-| [FINDINGS.md](FINDINGS.md) | What the data says, what it cannot, and the model's tables beside the group-by ones |
-| [docs/ENGINEERING.md](docs/ENGINEERING.md) | Architecture, data model, tests, incremental loading, trade-offs and what is not yet working |
-| [docs/ANALYTICS_PLAN.md](docs/ANALYTICS_PLAN.md) | The decisions behind the model and the edition, and the build slices |
+| [FINDINGS.md](FINDINGS.md) | The results, with tables, and what each one can and can't tell you |
+| [docs/ENGINEERING.md](docs/ENGINEERING.md) | A deeper, more technical look at how the data is collected, cleaned and tested |
+| [docs/ANALYTICS_PLAN.md](docs/ANALYTICS_PLAN.md) | The decisions I made about the model and how the results are published |
 
-Data: [HDB Resale Flat Prices](https://data.gov.sg) (data.gov.sg), station locations from
-[Wikidata](https://query.wikidata.org) (CC0), block coordinates from
+Data: [HDB Resale Flat Prices](https://data.gov.sg) (data.gov.sg), MRT station locations
+from [Wikidata](https://query.wikidata.org), block locations from
 [OneMap](https://www.onemap.gov.sg).

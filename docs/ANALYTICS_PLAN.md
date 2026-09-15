@@ -1,14 +1,15 @@
-# Analytics layer plan
+# Analytics plan
 
-What the analytics layer is, the decisions behind it, and the tasks for the slice
-currently being built. Only the active slice is planned in detail. Later slices get
-their tasks when they start, so this document cannot drift the way detailed plans do.
+My working notes for the analysis side of the project: the decisions I made about the
+pricing model and how the results get published, and the order I built things in. It's
+written as a checklist for myself, so it uses more technical shorthand than the other
+documents. [FINDINGS.md](../FINDINGS.md) explains the model in plain English.
 
 ## Goal
 
-Make the analysis as rigorous and tested as the pipeline: analytics engineering
-(tested dbt marts, generated documentation) and econometrics (a hedonic model with
-honest validation), served as a hosted dashboard that anyone can open.
+Make the analysis as careful and well-tested as the data pipeline: tested tables behind
+every published number, a pricing model that compares flats like for like (and is
+checked against a simple guess), and a dashboard anyone can open.
 
 ## Decisions
 
@@ -69,28 +70,12 @@ One pull request each, CI green before merge.
 4. ~~Block holdout validation against the baseline, then fair value.~~ Done in PR #4.
 5. ~~Remaining descriptive marts; Findings/Explore page split; Explore maths into a
    tested module.~~ Done in PR #5.
-6. **README landing page and `docs/ENGINEERING.md`** (detailed below).
+6. ~~README landing page and `docs/ENGINEERING.md`.~~ Done in PR #6, then rewritten in
+   plainer, first-person language with screenshots.
 7. Forecast replay: each year predicted from the years before it, against a "same as
-   last year" baseline, backing the no-forecasting limitation.
+   last year" baseline, backing the no-forecasting limitation. Not started.
 
 ---
-
-## Slice 6: a landing page, and the engineering detail moved out
-
-The README was written when the project was a pipeline. It now has to introduce both
-halves in the time a reader gives a landing page, while every engineering detail it held
-survives, corrected to match what the repository is now.
-
-### Files
-
-| File | Responsibility |
-|---|---|
-| `README.md` | Landing page: what the project is, the edition stamp, a dashboard screenshot, the headline findings with links, how it works, how to run the dashboard, and where each document is. |
-| `docs/ENGINEERING.md` | Everything the README held about the pipeline, with current counts, plus the analytics layer's engineering: dbt Python models, planted-answer tests, build-failing gates, the edition, generated documents and the parity check. Names what is not working yet. |
-| `docs/img/findings.png` | The Findings page, captured from the committed edition. |
-| `render_findings.py`, `tests/python/test_render_findings.py` | Renders README.md as well as FINDINGS.md, so the README's data-cut stamp is generated and checked in CI like the findings tables. |
-| `FINDINGS.md` | Points at the new documents; finding 3 gains the model's storey effects, which undercut its town-controlled figure. |
-| `.github/workflows/ci.yml` | The render check's step name covers both documents. |
 
 ## Global constraints
 

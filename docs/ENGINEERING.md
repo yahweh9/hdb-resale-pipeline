@@ -1,9 +1,46 @@
 # Engineering
 
-How the pipeline and the analytics layer are built, and why. [README.md](../README.md)
-is the landing page; [FINDINGS.md](../FINDINGS.md) is what the data says. This document
-is everything underneath: ingestion, the warehouse, the tests, the model's plumbing,
-and how a number gets from the API to the page.
+This is the behind-the-scenes document: how the data gets from the government's website
+to the charts, and how I check it along the way. You don't need it to understand the
+results. For those, start with [README.md](../README.md) and
+[FINDINGS.md](../FINDINGS.md).
+
+It's the most technical page in the project, so here's the short version first.
+
+## The short version
+
+1. **Download.** Python scripts download every HDB resale sale from data.gov.sg, the
+   locations of MRT stations from Wikidata, and a map location for every block from
+   OneMap. The raw files are saved exactly as they arrive and never edited.
+2. **Clean.** SQL models, run by a tool called dbt, turn the raw files into tidy tables
+   inside DuckDB, a small database that runs on a laptop. This step fixes formats,
+   spellings and data types.
+3. **Organise.** The tidy tables are arranged as one big table of sales, plus smaller
+   lookup tables for dates, towns, flat types and blocks. That makes every question a
+   simple lookup.
+4. **Model.** The pricing model runs inside the same dbt build, so it always uses the
+   latest cleaned data.
+5. **Check.** More than a hundred automatic checks run on every build and fail it if
+   something looks wrong, like a missing sale, a duplicate, or a model that stops
+   beating a simple guess.
+6. **Publish.** When I'm happy with the results, a script saves the final numbers into
+   the `published/` folder. The dashboard and FINDINGS.md both read from there, so they
+   can never show different numbers.
+
+## Words used in this document
+
+| Word | What it means here |
+|---|---|
+| **Bronze / silver / gold** | The raw data as downloaded / cleaned data / organised, ready-to-use data |
+| **Mart** | A small table holding exactly the numbers behind one chart or table |
+| **dbt** | A tool that runs SQL files in the right order and tests the results |
+| **Fact table / dimension** | The big table of sales / the lookup tables that describe them (towns, flats, blocks, dates) |
+| **Partition** | One file per month of sales, so a month can be replaced without touching the rest |
+| **Idempotent** | Safe to run twice: running it again gives the same result, not duplicates |
+| **High-water mark** | How far the download has already got, so the next run only fetches what's new |
+| **CI** | Continuous integration: GitHub re-runs the whole build and every check on each change |
+| **Fixture** | A small sample of the data kept in the repo, so the checks can run without downloading everything |
+| **Edition** | The saved set of published numbers, stamped with the date of the data |
 
 ---
 
@@ -424,7 +461,7 @@ tests/dbt/               Singular dbt tests, including the model's quality gates
 tests/python/            Pytest: ingest, model, edition, documents. Fully offline.
 tests/fixtures/          766-row stratified sample, so CI never calls the API.
 .github/workflows/       CI on every PR, scheduled ingest monthly.
-docs/                    This document, the analytics plan, the README screenshot.
+docs/                    This document, the analytics plan, and the screenshots.
 ```
 
 ---
@@ -456,74 +493,3 @@ docs/                    This document, the analytics plan, the README screensho
 - **Partition the fact table** by transaction month once volume justifies the scan
   cost. Today it is a 240k-row table that DuckDB scans in milliseconds.
 
----
-
-## Status
-
-**Working end to end, verified on this machine:**
-
-- Bronze ingest, incremental and full, 240,074 rows across 117 month partitions
-- Silver, gold, analysis and marts: 26 models and 105 data tests, all passing
-- Spatial layer: 181 MRT/LRT stations from Wikidata, 9,744 block addresses geocoded
-  via OneMap, distance-to-station, MRT band and distance-to-CBD on `dim_block`
-- The hedonic model, fitted across all years and per year, with block holdout
-  validation and block fair value
-- A committed edition; FINDINGS.md and README.md generated from it; a two-page
-  Streamlit dashboard reading it
-- 90 pytest tests, all passing
-
-**CI runs green on every push and pull request.** It was not green first time, and
-what it caught is worth stating rather than hiding. Two real defects survived a
-locally-passing suite:
-
-- A DuckDB internal assertion on Linux, against a newer DuckDB than this was written
-  on, when the partition file set shrank between two reads in one process. The fix
-  removed the query engine from the high-water mark entirely -- the month is in the
-  directory name, and finding the newest is a string comparison.
-- The fixture only seeded resale bronze. The two spatial models were added afterwards
-  and CI could build barely half the warehouse, which nothing noticed because the
-  workflow had never run.
-
-Both are the reason this list used to say "written but not yet exercised". A workflow
-that has not gone green is not a workflow that works.
-
-**Fixed on paper, not yet exercised:** the scheduled ingest workflow. It is
-`workflow_dispatch` plus a monthly cron and has not fired. As first written it would
-have failed: it ran the resale ingest and then `dbt build`, but never produced the MRT
-archive or the block coordinates that `dim_block` reads. Both live in the git-ignored
-`data/` directory, and CI never hit the gap because `seed_fixture.py` seeds them.
-
-The workflow now produces all three bronze inputs itself: the resale ingest, a fresh
-Wikidata query for stations, and the OneMap geocoder, which needs `ONEMAP_EMAIL` and
-`ONEMAP_PASSWORD` as repository secrets and checks for them before doing anything else.
-It is written for an empty `data/` directory, because that is the usual case rather
-than the edge case. GitHub evicts a cache entry nobody has read for seven days, so a
-monthly run almost always misses the bronze cache. That means a full resale load and a
-full geocode, about half an hour here and not yet timed from a GitHub runner. The cache
-only helps a rerun within the week. The bronze cache is saved before `dbt build`, so a
-failing data test does not throw away a finished geocode.
-
-Until a run goes green this belongs in this paragraph, not in the list above, for the
-reason the CI story gives.
-
-**Deleted, and worth naming.** An earlier pandas feature-engineering track
-(`silver_spatial_join.py`, `silver_features.py`) was removed once the MRT and geocoding
-work moved into dbt. Two ideas in it have no dbt equivalent and are genuinely missing
-rather than merely relocated:
-
-- **Distance to a top-ranked primary school**, and a within-1km flag. Primary One
-  registration priority inside 1km is one of the strongest price signals in Singapore
-  resale, so this is the most valuable unbuilt feature here. It needs a schools ingest
-  from data.gov.sg, which does not exist yet.
-- **Shopping malls within 2km.** Needs a mall dataset with no authoritative public
-  source; the original used a CSV of unknown provenance, which is why it went rather
-  than being ported.
-
-Everything else those scripts computed -- distance to CBD, distance to the nearest
-station, estate maturity, floor tiers -- now lives in `dim_block`, `dim_town` and
-`dim_flat`, computed in SQL and covered by tests.
-
-**Deliberately out of scope:** streaming ingestion, a cloud warehouse, an orchestrator
-beyond CI cron, SCD Type 2 (see [Data model](#data-model) for why none of these
-dimensions needs it), and forecasting (see the limitations in
-[FINDINGS.md](../FINDINGS.md#limitations)).

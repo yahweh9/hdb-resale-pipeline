@@ -59,9 +59,9 @@ def _term(term):
 
 _MODEL_VS_NAIVE = [
     ("Sales", col("sales", _count)),
-    ("Naive (group-by)", col("naive_pct", _pct)),
-    ("Model (like for like)", col("model_pct", _pct)),
-    ("95% interval", interval("model_ci_low_pct", "model_ci_high_pct")),
+    ("Simple comparison", col("naive_pct", _pct)),
+    ("Like for like", col("model_pct", _pct)),
+    ("95% range", interval("model_ci_low_pct", "model_ci_high_pct")),
 ]
 
 def _share(v):
@@ -74,8 +74,8 @@ _FAIR_VALUE = [
     ("Block", col("address", str)),
     ("Town", col("town", str)),
     ("Sales", col("sales", _count)),
-    ("vs model", col("premium_pct", _pct)),
-    ("95% interval", interval("ci_low_pct", "ci_high_pct")),
+    ("Vs expected price", col("premium_pct", _pct)),
+    ("95% range", interval("ci_low_pct", "ci_high_pct")),
 ]
 
 # Marker name -> the published mart it reads, an optional row filter, and its columns as
@@ -88,8 +88,8 @@ TABLES = {
         "columns": [
             ("Distance to MRT", col("mrt_band", str)),
             ("Sales", col("sales", _count)),
-            ("Median psm", col("median_price_psm", _sgd)),
-            ("vs over 1.2km", col("premium_vs_farthest_pct", _pct)),
+            ("Median price per sqm", col("median_price_psm", _sgd)),
+            ("Vs over 1.2km", col("premium_vs_farthest_pct", _pct)),
         ],
     },
     "mrt_model_vs_naive": {
@@ -100,26 +100,26 @@ TABLES = {
     "lease_model_vs_naive": {
         "mart": "mart_model_vs_naive",
         "rows": _term("lease_band"),
-        "columns": [("Lease remaining (years)", col("level", str))] + _MODEL_VS_NAIVE,
+        "columns": [("Lease left (years)", col("level", str))] + _MODEL_VS_NAIVE,
     },
     "mrt_premium_by_year": {
         "mart": "mart_effects_by_year",
         "rows": lambda df: df[df["level"] == "0-400m"],
         "columns": [
             ("Year", col("calendar_year", str)),
-            ("0-400m vs over 1.2km", col("effect_pct", _pct)),
-            ("95% interval", interval("ci_low_pct", "ci_high_pct")),
+            ("Within 400m vs over 1.2km, like for like", col("effect_pct", _pct)),
+            ("95% range", interval("ci_low_pct", "ci_high_pct")),
         ],
     },
     "model_validation": {
         "mart": "mart_model_validation",
         "columns": [
             ("Year", col("scope", str)),
-            ("Unseen sales", col("test_sales", _count)),
-            ("Model: median miss", col("model_median_error_pct", _share)),
-            ("Guess: median miss", col("baseline_median_error_pct", _share)),
+            ("Sales it hadn't seen", col("test_sales", _count)),
+            ("Model: typical miss", col("model_median_error_pct", _share)),
+            ("Simple guess: typical miss", col("baseline_median_error_pct", _share)),
             ("Model: within 10%", col("model_within_10pct", _share)),
-            ("Guess: within 10%", col("baseline_within_10pct", _share)),
+            ("Simple guess: within 10%", col("baseline_within_10pct", _share)),
         ],
     },
     "fair_value_verdicts": {
@@ -131,7 +131,7 @@ TABLES = {
         "columns": [
             ("Verdict", col("verdict", str)),
             ("Blocks", col("blocks", _count)),
-            ("Their sales", col("sales", _count)),
+            ("Sales in those blocks", col("sales", _count)),
         ],
     },
     "fair_value_above": {
@@ -147,36 +147,36 @@ TABLES = {
     "cbd_gradient": {
         "mart": "mart_cbd_gradient",
         "columns": [
-            ("km from CBD", col("km_from_cbd", str)),
-            ("Median psm", col("median_price_psm", _sgd)),
+            ("Km from the CBD", col("km_from_cbd", str)),
+            ("Median price per sqm", col("median_price_psm", _sgd)),
             ("Sales", col("sales", _count)),
         ],
     },
     "mrt_premium_by_cbd_ring": {
         "mart": "mart_mrt_premium_by_cbd_ring",
         "columns": [
-            ("Distance from CBD", col("cbd_ring", str)),
-            ("Near MRT", col("near_mrt_psm", _sgd)),
-            ("Not near", col("not_near_psm", _sgd)),
-            ("Premium", col("premium_pct", _pct)),
+            ("Distance from the CBD", col("cbd_ring", str)),
+            ("Within 400m of MRT", col("near_mrt_psm", _sgd)),
+            ("Further away", col("not_near_psm", _sgd)),
+            ("Difference", col("premium_pct", _pct)),
         ],
     },
     "storey_naive": {
         "mart": "mart_storey_premium",
         "rows": lambda df: df.dropna(subset=["naive_4room_psm"]),
         "columns": [
-            ("Tier", col("floor_tier", str)),
-            ("Median psm (4-room)", col("naive_4room_psm", _sgd)),
-            ("Naive premium", col("naive_premium_pct", _pct)),
+            ("Floor level", col("floor_tier", str)),
+            ("Median price per sqm (4-room)", col("naive_4room_psm", _sgd)),
+            ("Vs a low floor", col("naive_premium_pct", _pct)),
         ],
     },
     "storey_controlled": {
         "mart": "mart_storey_premium",
         "rows": lambda df: df.dropna(subset=["controlled_multiplier"]),
         "columns": [
-            ("Tier", col("floor_tier", str)),
-            ("Controlled multiplier", col("controlled_multiplier", lambda v: f"{v:.3f}")),
-            ("Comparison cells", col("comparison_cells", _count)),
+            ("Floor level", col("floor_tier", str)),
+            ("Price vs a low floor (1.00 = same)", col("controlled_multiplier", lambda v: f"{v:.2f}")),
+            ("Groups compared", col("comparison_cells", _count)),
         ],
     },
     "lease_naive_4room": {
@@ -184,16 +184,16 @@ TABLES = {
         # Dearest first: the finding is where "under 50" lands in this order.
         "rows": lambda df: df.sort_values("median_price_psm", ascending=False),
         "columns": [
-            ("Remaining lease (years)", col("lease_band", str)),
-            ("Median psm", col("median_price_psm", _sgd)),
+            ("Lease left (years)", col("lease_band", str)),
+            ("Median price per sqm", col("median_price_psm", _sgd)),
             ("Sales", col("sales", _count)),
         ],
     },
     "lease_confound_4room": {
         "mart": "mart_lease_4room",
         "columns": [
-            ("Remaining lease (years)", col("lease_band", str)),
-            ("Median km to CBD", col("median_km_to_cbd", lambda v: f"{v:.1f} km")),
+            ("Lease left (years)", col("lease_band", str)),
+            ("Typical distance to the CBD", col("median_km_to_cbd", lambda v: f"{v:.1f} km")),
             ("% in mature estates", col("pct_mature", lambda v: f"{v:.0f}%")),
             ("Sales", col("sales", _count)),
         ],
@@ -202,11 +202,11 @@ TABLES = {
         "mart": "mart_price_by_year",
         "columns": [
             ("Year", col("calendar_year", str)),
-            ("Median psm", col("median_price_psm", _sgd)),
+            ("Median price per sqm", col("median_price_psm", _sgd)),
             ("Sales", col("sales", _count)),
-            ("Mature", col("mature_psm", _sgd)),
-            ("Non-mature", col("non_mature_psm", _sgd)),
-            ("Mature premium", col("maturity_gap_pct", _share)),
+            ("Mature estates", col("mature_psm", _sgd)),
+            ("Non-mature estates", col("non_mature_psm", _sgd)),
+            ("How much more mature estates cost", col("maturity_gap_pct", _share)),
         ],
     },
     "large_flat_share": {
@@ -216,7 +216,7 @@ TABLES = {
             ("2017", col("share_2017", _share)),
             ("2021", col("share_2021", _share)),
             ("Latest year", col("share_latest", _share)),
-            ("Change", col("change_pts", lambda v: f"{v:+.1f} pts")),
+            ("Change since 2017", col("change_pts", lambda v: f"{v:+.1f} pts")),
         ],
     },
     "price_index_by_year": {
@@ -224,9 +224,9 @@ TABLES = {
         "rows": lambda df: df[df["is_year_end"]],
         "columns": [
             ("Month", col("month", str)),
-            ("Median psm index", col("naive_index", _index)),
-            ("Quality-adjusted index", col("hedonic_index", _index)),
-            ("95% interval", interval("hedonic_ci_low", "hedonic_ci_high", _index)),
+            ("Median price (Jan 2017 = 100)", col("naive_index", _index)),
+            ("Like for like (Jan 2017 = 100)", col("hedonic_index", _index)),
+            ("95% range", interval("hedonic_ci_low", "hedonic_ci_high", _index)),
         ],
     },
 }
