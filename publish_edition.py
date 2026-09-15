@@ -32,6 +32,8 @@ MART_TABLES = [
     "mart_price_index",
     "mart_model_vs_naive",
     "mart_effects_by_year",
+    "mart_model_validation",
+    "mart_block_fair_value",
 ]
 
 # One join per dimension -- the star the dashboard used to query directly. The ingest

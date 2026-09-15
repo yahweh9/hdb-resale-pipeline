@@ -74,6 +74,7 @@ def load_published():
         edition.read_table("mart_mrt_premium_by_band"),
         edition.read_table("mart_price_index"),
         edition.read_table("mart_effects_by_year"),
+        edition.read_table("mart_block_fair_value"),
     )
 
 
@@ -408,7 +409,7 @@ python publish_edition.py""",
         st.stop()
 
     df = load_sales()
-    stamp, mrt_bands, index, effects = load_published()
+    stamp, mrt_bands, index, effects, fair_value = load_published()
 
     with st.sidebar:
         st.header("Filters")
@@ -497,6 +498,27 @@ python publish_edition.py""",
             )
 
     st.divider()
+
+    st.subheader("Blocks that sell above or below what their attributes justify")
+    judged = fair_value[fair_value["verdict"].isin(["above", "below"])]
+    if towns:
+        # Narrowing to chosen towns only selects rows; every verdict was computed on all
+        # sales, so the town filter never changes a block's number.
+        judged = judged[judged["town"].isin(towns)]
+    st.dataframe(
+        judged[["address", "town", "verdict", "premium_pct", "ci_low_pct", "ci_high_pct", "sales"]]
+        .rename(columns={"address": "Block", "town": "Town", "verdict": "Verdict",
+                         "premium_pct": "vs model (%)", "ci_low_pct": "95% low (%)",
+                         "ci_high_pct": "95% high (%)", "sales": "Sales"}),
+        use_container_width=True, hide_index=True,
+    )
+    window = f"{fair_value['window_start'].iloc[0]} to {fair_value['window_end'].iloc[0]}" if len(fair_value) else ""
+    st.caption(
+        f"Published figure. Sales {window}, each against its own year's model. A verdict "
+        "needs 10+ sales and a 95% interval clear of zero; the Town filter narrows the list "
+        "but never changes a number. A premium is whatever the model cannot see -- flat "
+        "design, block age within a lease band, views -- not a sign of overpricing."
+    )
 
     with st.expander("View the numbers as a table"):
         st.dataframe(

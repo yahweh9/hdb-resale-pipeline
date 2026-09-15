@@ -12,6 +12,8 @@ planted-answer tests in tests/python/test_hedonic.py can prove it recovers known
 before the dbt Python model runs it on real sales.
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -50,8 +52,40 @@ def _reference(values, term):
     return sorted(counts.index, key=lambda level: (-counts[level], level))[0]
 
 
+@dataclass
+class Fit:
+    """A fitted model: its tidy coefficients, and the intercept that makes them predict.
+
+    The intercept is the log price per sqm of a flat at every reference level in the
+    AVERAGE town, so predicting a sale is the intercept plus the estimate for each of its
+    levels -- town included, because town effects are relative to that same average.
+    """
+    coefficients: pd.DataFrame
+    intercept: float
+
+
 def fit_hedonic(sales):
-    """Fit the model to `sales` and return one row per level of every term.
+    """Fit the model to `sales` and return its coefficients. See `fit`."""
+    return fit(sales).coefficients
+
+
+def predict(model, sales):
+    """Predicted log price per sqm for each sale; NaN where a level was never in the fit.
+
+    A town, band or month the model has no estimate for cannot be priced, and pretending
+    otherwise would be inventing a number. Callers decide what an unpriceable sale means.
+    """
+    df = sales.rename(columns={"transaction_month": "month"})
+    coefs = model.coefficients
+    log_psm = np.full(len(df), model.intercept)
+    for term in TERMS:
+        estimates = coefs[coefs["term"] == term].set_index("level")["estimate"]
+        log_psm = log_psm + df[term].map(estimates).to_numpy(dtype=float)
+    return log_psm
+
+
+def fit(sales):
+    """Fit the model to `sales`; return a Fit with one coefficient row per level of every term.
 
     Input columns: block_key, town, mrt_band, lease_band, floor_tier, flat_type,
     transaction_month ('YYYY-MM') and price_psm.
@@ -124,7 +158,12 @@ def fit_hedonic(sales):
                 "ci_low_pct": 100 * np.expm1(estimate - Z95 * std_error),
                 "ci_high_pct": 100 * np.expm1(estimate + Z95 * std_error),
             })
-    return pd.DataFrame(rows)
+
+    # The raw intercept belongs to the reference town. Town effects are reported against
+    # the average town, so move the intercept there too: add the mean raw town effect.
+    _, towns, _, town_start = layout[TERMS.index("town")]
+    intercept = params[0] + params[town_start:town_start + len(towns) - 1].sum() / len(towns)
+    return Fit(coefficients=pd.DataFrame(rows), intercept=float(intercept))
 
 
 def fit_by_year(sales):

@@ -16,55 +16,7 @@ import pytest
 
 import hedonic
 
-TOWNS = {"EAST": np.log(0.92), "MID": 0.0, "WEST": np.log(1.08)}
-MRT = {"0-400m": np.log(1.10), "400-800m": np.log(1.04), "800m-1.2km": 0.0, "over 1.2km": 0.0}
-LEASE = {"under 50": np.log(0.85), "50-60": np.log(0.90), "60-70": np.log(0.93),
-         "70-80": np.log(0.96), "80-90": np.log(0.98), "90+": 0.0}
-FLOOR = {"Low (1-4)": 0.0, "Mid (5-9)": 0.03, "High (10-19)": 0.08, "Ultra-High (20+)": 0.30}
-FLAT = {"3 ROOM": 0.05, "4 ROOM": 0.0, "5 ROOM": -0.03}
-
-
-def month_labels(n):
-    return [f"{2017 + i // 12}-{i % 12 + 1:02d}" for i in range(n)]
-
-
-def market(seed=0, n_blocks=400, sales_per_block=8, drop=None, n_months=24):
-    """Synthetic sales with known effects. `drop` = (term, level) removes that level."""
-    MONTHS = month_labels(n_months)
-    rng = np.random.default_rng(seed)
-
-    def pick(options, size, p=None):
-        keys = np.array(list(options))
-        return keys[rng.choice(len(keys), size=size, p=p)]
-
-    # Block attributes: every sale in a block shares its town, station band and lease.
-    town = pick(TOWNS, n_blocks)
-    mrt = pick(MRT, n_blocks)
-    # The confound: WEST, the dearest town, has three times the share of short leases.
-    short = rng.random(n_blocks) < np.where(town == "WEST", 3 / 8, 1 / 6)
-    lease = np.where(short, "under 50", pick([k for k in LEASE if k != "under 50"], n_blocks))
-    block_shock = rng.normal(0, 0.02, n_blocks)
-
-    n = n_blocks * sales_per_block
-    b = np.repeat(np.arange(n_blocks), sales_per_block)
-    floor, flat = pick(FLOOR, n), pick(FLAT, n)
-    month_i = rng.integers(len(MONTHS), size=n)
-
-    def lookup(effects, levels):
-        return pd.Series(levels).map(effects).to_numpy()
-
-    log_psm = (np.log(5000) + lookup(TOWNS, town[b]) + lookup(MRT, mrt[b])
-               + lookup(LEASE, lease[b]) + lookup(FLOOR, floor) + lookup(FLAT, flat)
-               + 0.005 * month_i + block_shock[b] + rng.normal(0, 0.03, n))
-    sales = pd.DataFrame({
-        "block_key": [f"b{i}" for i in b], "town": town[b], "mrt_band": mrt[b],
-        "lease_band": lease[b], "floor_tier": floor, "flat_type": flat,
-        "transaction_month": np.array(MONTHS)[month_i], "price_psm": np.exp(log_psm),
-    })
-    if drop:
-        term, level = drop
-        sales = sales[sales[term] != level]
-    return sales
+from synthetic import FLAT, FLOOR, LEASE, MRT, TOWNS, market
 
 
 @pytest.fixture(scope="module")
@@ -199,3 +151,27 @@ def test_a_year_too_thin_to_identify_is_skipped_not_guessed():
     coefs = hedonic.fit_by_year(thin)
 
     assert sorted(coefs["calendar_year"].unique()) == [2017]
+
+
+# --- Prediction ---------------------------------------------------------------------
+
+
+def test_predictions_land_within_the_planted_noise():
+    sales = market()
+    model = hedonic.fit(sales)
+
+    misses = np.log(sales["price_psm"].to_numpy()) - hedonic.predict(model, sales)
+
+    # Sale noise sd 0.03 plus block shock sd 0.02: a typical miss is ~0.03 in log points.
+    assert np.median(np.abs(misses)) < 0.04
+    assert abs(np.mean(misses)) < 0.005
+
+
+def test_a_level_the_fit_never_saw_cannot_be_predicted():
+    model = hedonic.fit(market())
+    unseen = market().head(3).assign(town=["EAST", "NOWHERE", "WEST"])
+
+    predicted = hedonic.predict(model, unseen)
+
+    assert np.isnan(predicted[1])
+    assert not np.isnan(predicted[[0, 2]]).any()
