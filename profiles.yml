@@ -11,3 +11,6 @@ hdb_resale:
       path: "{{ env_var('DUCKDB_PATH', 'data/warehouse.duckdb') }}"
       threads: 4
       schema: main
+      # Puts the repository root on sys.path, so dbt Python models can import the
+      # modules that live there (hedonic.py) instead of copying their code inline.
+      module_paths: ["."]
