@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: hedonic_sales
+    description: "Grain: one resale transaction, with every band the hedonic model uses."
+    columns:
+      - name: resale_txn_key
+        data_tests: [unique, not_null]
+      - name: lease_band
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["under 50", "50-60", "60-70", "70-80", "80-90", "90+"]
+      - name: mrt_band
+        data_tests: [not_null]
+
+  - name: hedonic_coefficients
+    description: >
+      Grain: one row per level of every term in the all-years fit of
+      log(price_psm) ~ town + mrt_band + lease_band + floor_tier + flat_type + month.
+      Standard errors are clustered by block; towns are relative to the average town.
+    columns:
+      - name: term
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["town", "mrt_band", "lease_band", "floor_tier", "flat_type", "month"]
+      - name: level
+        data_tests: [not_null]
+      - name: effect_pct
+        data_tests: [not_null]
+      - name: std_error
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"

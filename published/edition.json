@@ -3,6 +3,18 @@
   "sales": 240074,
   "published_on": "2026-09-14",
   "tables": [
-    "mart_mrt_premium_by_band"
+    "mart_mrt_premium_by_band",
+    "mart_price_index",
+    "mart_model_vs_naive",
+    "mart_effects_by_year",
+    "mart_model_validation",
+    "mart_block_fair_value",
+    "mart_cbd_gradient",
+    "mart_mrt_premium_by_cbd_ring",
+    "mart_storey_premium",
+    "mart_lease_4room",
+    "mart_price_by_year",
+    "mart_large_flat_share",
+    "mart_town_ranking"
   ]
 }
