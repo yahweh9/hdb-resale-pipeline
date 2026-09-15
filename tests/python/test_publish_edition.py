@@ -35,7 +35,8 @@ def warehouse(sales_rows=3):
     """)
     con.execute("""
         create table gold.dim_block as
-        select 'b1' block_key, 0.35 dist_to_nearest_mrt_km, 9.1 dist_to_cbd_km, true is_near_mrt
+        select 'b1' block_key, 0.35 dist_to_nearest_mrt_km, '0-400m' mrt_band, 1 mrt_band_order,
+               9.1 dist_to_cbd_km, true is_near_mrt
     """)
     con.execute(f"""
         create table gold.fact_resale_txn as

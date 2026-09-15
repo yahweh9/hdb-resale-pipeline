@@ -66,43 +66,31 @@ One pull request each, CI green before merge.
 2. ~~The fitting function with planted-answer tests, then the dbt Python model.~~ Done
    in PR #2.
 3. ~~Price index, effects over time, and the before/after tables.~~ Done in PR #3.
-4. **Block holdout validation against the baseline, then fair value** (detailed below).
-5. Remaining descriptive marts; Findings/Explore page split; Explore maths into a
-   tested module.
+4. ~~Block holdout validation against the baseline, then fair value.~~ Done in PR #4.
+5. **Remaining descriptive marts; Findings/Explore page split; Explore maths into a
+   tested module** (detailed below).
 6. README landing page and `docs/ENGINEERING.md`.
 7. Forecast replay: each year predicted from the years before it, against a "same as
    last year" baseline, backing the no-forecasting limitation.
 
 ---
 
-## Slice 4: validation, then fair value
+## Slice 5: every table generated, and two dashboard pages
 
-First prove the model prices flats it has never seen better than a lazy guess, then use
-it to say which blocks sell above or below what their attributes justify.
+Finish the move off hand-typed numbers, then split the dashboard into what is published
+and what is exploratory.
 
 ### Files
 
 | File | Responsibility |
 |---|---|
-| `hedonic.py` | `fit()` returns a `Fit` with an intercept alongside the coefficients; `predict(fit, sales)` returns log psm, NaN for a level the fit never saw. `fit_hedonic` and `fit_by_year` keep their output. |
-| `valuation.py` | `validate(sales)`: per year, fit on 80% of blocks and predict the other 20%, against the town x flat type x year median. `fair_value(sales)`: each sale in the last 36 months against its own year's full fit, averaged per block. |
-| `tests/python/synthetic.py` | The planted market, shared by the hedonic and valuation tests. |
-| `tests/python/test_valuation.py` | The model beats the baseline on a planted market; the split is by block; planted block premiums get verdicts; thin blocks do not. |
-| `models/analysis/hedonic_validation.py`, `block_fair_value.py` | dbt Python models over `valuation`. |
-| `models/marts/mart_model_validation.sql`, `mart_block_fair_value.sql` | Published shapes; fair value joined to block addresses. |
-| `tests/dbt/assert_model_beats_baseline.sql` | Any scope with 1,000+ test sales: the model's median miss is below the baseline's. The quality gate. |
-| `tests/dbt/assert_fair_value_verdicts_follow_the_rules.sql` | A verdict needs 10+ sales and an interval clear of zero. |
-| `render_findings.py`, `publish_edition.py`, `FINDINGS.md`, `dashboard.py` | Validation table, fair value summary and top blocks; a fair value table in the dashboard. |
-
-### Rules
-
-- The holdout split is by block, with a fixed seed, so no block is in both halves, and a
-  rerun gives the same numbers.
-- Metrics are the median absolute % error and the share of sales within 10%, compared
-  on the sales both methods can predict.
-- Verdicts: `above` or `below` when a block has 10+ sales in the window and the 95% t
-  interval on its mean residual excludes zero; `in line` with 10+ sales otherwise;
-  `not enough sales` below 10.
+| `models/marts/mart_cbd_gradient.sql`, `mart_mrt_premium_by_cbd_ring.sql`, `mart_storey_premium.sql`, `mart_lease_4room.sql`, `mart_price_by_year.sql`, `mart_large_flat_share.sql`, `mart_town_ranking.sql` | The descriptive figures behind findings 1-6 and the Findings page. Each reproduces the hand-typed table it replaces exactly, except finding 4's, which moves to the model's 10-year lease bands so there is one band system. |
+| `explore.py`, `tests/python/test_explore.py` | Filter-aware versions of the descriptive figures, in plain pandas, returning the same columns as the marts. |
+| `check_explore_parity.py` | Explore, unfiltered, must equal the published marts. Run in CI on the fixture edition. |
+| `charts.py` | Styling and chart builders, fed by marts or by `explore.py` alike. |
+| `dashboard.py` | Two pages: Findings (published marts only, no filters) and Explore (filters, `explore.py`). |
+| `publish_edition.py` | Sales gain `mrt_band` columns, so Explore never re-derives a band. |
+| `FINDINGS.md`, `render_findings.py` | Every remaining hand table becomes a marker. |
 
 ## Global constraints
 

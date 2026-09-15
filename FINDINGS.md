@@ -38,17 +38,29 @@ that changes an answer, it is said so explicitly — in one case it reverses it.
 
 Median price per square metre, by 1km ring from the CBD (1.2839, 103.8515):
 
-| km | median psm | | km | median psm |
-|---|---|---|---|---|
-| 1 | S$8,889 | | 10 | S$5,198 |
-| 2 | S$7,416 | | 11 | S$5,529 |
-| 3 | S$6,660 | | 12 | S$5,393 |
-| 4 | S$6,517 | | 13 | S$5,137 |
-| 5 | S$5,981 | | 14 | S$5,376 |
-| 6 | S$5,917 | | 15 | S$5,187 |
-| 7 | S$6,182 | | 16 | S$4,615 |
-| 8 | S$5,672 | | 17 | S$4,694 |
-| 9 | S$5,411 | | 19 | S$4,314 |
+<!-- table: cbd_gradient -->
+| km from CBD | Median psm | Sales |
+|---|---|---|
+| 1 | S$8,889 | 1,558 |
+| 2 | S$7,416 | 4,538 |
+| 3 | S$6,660 | 4,025 |
+| 4 | S$6,517 | 10,119 |
+| 5 | S$5,981 | 7,563 |
+| 6 | S$5,917 | 8,782 |
+| 7 | S$6,182 | 6,676 |
+| 8 | S$5,672 | 7,830 |
+| 9 | S$5,411 | 13,751 |
+| 10 | S$5,198 | 16,511 |
+| 11 | S$5,529 | 10,386 |
+| 12 | S$5,393 | 20,586 |
+| 13 | S$5,137 | 22,666 |
+| 14 | S$5,376 | 32,674 |
+| 15 | S$5,187 | 20,565 |
+| 16 | S$4,615 | 13,667 |
+| 17 | S$4,694 | 12,264 |
+| 18 | S$4,777 | 19,205 |
+| 19 | S$4,314 | 6,410 |
+<!-- /table -->
 
 Three regimes, not one gradient:
 
@@ -87,12 +99,14 @@ Almost all of the difference sits inside 800m; beyond that the bands are within 
 1% of each other. That headline is close to meaningless on its own, though, because
 station proximity is entangled with CBD proximity. Splitting by ring:
 
+<!-- table: mrt_premium_by_cbd_ring -->
 | Distance from CBD | Near MRT | Not near | Premium |
 |---|---|---|---|
-| under 5km | S$7,504 | S$6,394 | **+17.4%** |
-| 5–10km | S$6,098 | S$5,650 | **+7.9%** |
-| 10–15km | S$5,375 | S$5,247 | **+2.4%** |
-| 15km+ | S$5,000 | S$4,743 | **+5.4%** |
+| under 5km | S$7,504 | S$6,394 | +17.4% |
+| 5-10km | S$6,098 | S$5,650 | +7.9% |
+| 10-15km | S$5,375 | S$5,247 | +2.4% |
+| 15km+ | S$5,000 | S$4,743 | +5.4% |
+<!-- /table -->
 
 The premium is **more than seven times larger in the centre than at 10–15km**, and the
 aggregate 7.2% is an artefact of mixing them.
@@ -146,12 +160,14 @@ here are straight-line.
 
 Comparing floor tiers directly, for 4-room flats:
 
-| Tier | Median psm | Naive premium |
+<!-- table: storey_naive -->
+| Tier | Median psm (4-room) | Naive premium |
 |---|---|---|
-| Low (1–4) | S$5,000 | — |
-| Mid (5–9) | S$5,288 | +5.8% |
-| High (10–19) | S$5,739 | +14.8% |
-| Ultra-High (20+) | S$9,140 | **+82.8%** |
+| Low (1-4) | S$5,000 | +0.0% |
+| Mid (5-9) | S$5,288 | +5.8% |
+| High (10-19) | S$5,739 | +14.8% |
+| Ultra-High (20+) | S$9,140 | +82.8% |
+<!-- /table -->
 
 An 83% premium for a high floor is not credible, and it is not what is happening.
 Blocks tall enough to have a 20th storey are newer and concentrated in expensive
@@ -161,12 +177,14 @@ Comparing each tier only against **low floors in the same town, the same flat ty
 the same year** (189 such comparison cells for the top tier, minimum 15 sales per
 cell):
 
-| Tier | Controlled multiplier |
-|---|---|
-| Low (1–4) | 1.000 |
-| Mid (5–9) | 1.052 |
-| High (10–19) | 1.118 |
-| Ultra-High (20+) | **1.513** |
+<!-- table: storey_controlled -->
+| Tier | Controlled multiplier | Comparison cells |
+|---|---|---|
+| Low (1-4) | 1.000 | 888 |
+| Mid (5-9) | 1.052 | 741 |
+| High (10-19) | 1.118 | 832 |
+| Ultra-High (20+) | 1.513 | 189 |
+<!-- /table -->
 
 **The 20+ premium falls from 83% to 51%.** Around a third of the apparent storey
 effect was location and vintage. The remaining 51% is large, consistent across cells,
@@ -182,28 +200,39 @@ tall blocks still differ systematically from short ones.
 Every buyer in Singapore knows a shorter lease should mean a cheaper flat. The data,
 grouped naively for 4-room flats, says otherwise:
 
-| Remaining lease | Median psm | Sales |
+<!-- table: lease_naive_4room -->
+| Remaining lease (years) | Median psm | Sales |
 |---|---|---|
-| 90+ years | S$6,129 | 30,271 |
-| **under 50 years** | **S$5,945** | **638** |
-| 70–90 years | S$5,336 | 37,522 |
-| 50–70 years | S$4,911 | 33,602 |
+| 80-90 | S$6,413 | 16,150 |
+| 90+ | S$6,129 | 30,271 |
+| under 50 | S$5,945 | 638 |
+| 50-60 | S$5,357 | 10,220 |
+| 70-80 | S$4,946 | 21,372 |
+| 60-70 | S$4,709 | 23,382 |
+<!-- /table -->
 
-The shortest leases come **second most expensive**, above two bands with far more
-lease left. Taken at face value this says lease decay does not exist, which is false.
+The shortest leases come **third most expensive**, above three bands with more lease
+left, and 80–90 year leases sell for more than 90+. Taken at face value this says lease
+decay does not exist, which is false.
 
 It is a confound, and it is measurable:
 
-| Remaining lease | Median km to CBD | % in mature estates | Sales |
+<!-- table: lease_confound_4room -->
+| Remaining lease (years) | Median km to CBD | % in mature estates | Sales |
 |---|---|---|---|
-| under 50 years | **6.2 km** | **93%** | 638 |
-| 50–70 years | 12.2 km | 54% | 33,602 |
-| 70–90 years | 14.2 km | 30% | 37,522 |
-| 90+ years | 14.2 km | 25% | 30,271 |
+| under 50 | 6.2 km | 93% | 638 |
+| 50-60 | 10.0 km | 76% | 10,220 |
+| 60-70 | 13.6 km | 45% | 23,382 |
+| 70-80 | 14.7 km | 29% | 21,372 |
+| 80-90 | 13.2 km | 31% | 16,150 |
+| 90+ | 14.2 km | 25% | 30,271 |
+<!-- /table -->
 
-Flats with under 50 years left sit **less than half as far from the CBD** as every
-other band, and 93% of them are in mature estates. They are the oldest flats in
-Singapore, and the oldest estates are the central ones. The five towns supplying most
+Flats with under 50 years left sit **less than half as far from the CBD** as any band
+with 60 or more years left, and 93% of them are in mature estates. It is a gradient, not
+an outlier: from 70–80 years down to under 50, the median distance to the CBD falls from
+14.7km to 6.2km and the share in mature estates rises from 29% to 93%. The oldest flats
+are in the oldest estates, and the oldest estates are the central ones. The five towns supplying most
 of those 638 sales are Toa Payoh, Bukit Merah, Kallang/Whampoa, Queenstown and Marine
 Parade — every one of them central and mature.
 
@@ -243,15 +272,22 @@ combined price of an older flat with less lease left.
 
 Median price per square metre, all flat types:
 
-| Year | Median psm | Sales | | Year | Median psm | Sales |
-|---|---|---|---|---|---|---|
-| 2017 | S$4,282 | 20,509 | | 2022 | S$5,373 | 26,720 |
-| 2018 | S$4,209 | 21,561 | | 2023 | S$5,709 | 25,754 |
-| 2019 | S$4,176 | 22,186 | | 2024 | S$6,098 | 27,832 |
-| 2020 | S$4,356 | 23,333 | | 2025 | S$6,500 | 25,085 |
-| 2021 | S$4,916 | 29,087 | | 2026* | S$6,478 | 18,007 |
+<!-- table: price_by_year -->
+| Year | Median psm | Sales | Mature | Non-mature | Mature premium |
+|---|---|---|---|---|---|
+| 2017 | S$4,282 | 20,509 | S$4,851 | S$3,944 | 23.0% |
+| 2018 | S$4,209 | 21,561 | S$4,749 | S$3,859 | 23.1% |
+| 2019 | S$4,176 | 22,186 | S$4,592 | S$3,893 | 17.9% |
+| 2020 | S$4,356 | 23,333 | S$4,623 | S$4,177 | 10.7% |
+| 2021 | S$4,916 | 29,087 | S$5,188 | S$4,756 | 9.1% |
+| 2022 | S$5,373 | 26,720 | S$5,672 | S$5,200 | 9.1% |
+| 2023 | S$5,709 | 25,754 | S$5,923 | S$5,579 | 6.2% |
+| 2024 | S$6,098 | 27,832 | S$6,388 | S$5,927 | 7.8% |
+| 2025 | S$6,500 | 25,085 | S$6,864 | S$6,278 | 9.3% |
+| 2026 | S$6,478 | 18,007 | S$6,920 | S$6,211 | 11.4% |
+<!-- /table -->
 
-<sub>*nine months</sub>
+<sub>2026 is nine months.</sub>
 
 The shape matters more than the total. **2017–2019 was flat and slightly declining.**
 The entire 52% rise happened from 2020 onward, with the sharpest single jump in 2021
@@ -279,16 +315,8 @@ the same flat — same town, MRT band, lease band, storey and flat type — mont
 Like for like, prices rose about 57% to Sep 2026, and they did not flatten in 2026: the
 median's pause came from which flats sold, not from what flats were worth.
 
-Alongside it, the gap between mature and non-mature estates **collapsed and then
-partially recovered**:
-
-| Year | Mature | Non-mature | Gap |
-|---|---|---|---|
-| 2017 | S$4,851 | S$3,944 | 23.0% |
-| 2019 | S$4,592 | S$3,893 | 17.9% |
-| 2021 | S$5,188 | S$4,756 | 9.1% |
-| 2023 | S$5,923 | S$5,579 | **6.2%** |
-| 2026 | S$6,920 | S$6,211 | 11.4% |
+Alongside it, the gap between mature and non-mature estates (the last column above)
+**collapsed and then partially recovered**.
 
 Non-mature estates rose faster through the boom, compressing a 23% premium to 6% by
 2023, before it widened again. Because this is a *ratio*, it partly controls for the
@@ -307,13 +335,15 @@ North and West, while central buyers moved to smaller units — a regional diver
 
 Share of each region's sales that are 5-room, Executive or Multi-Generation:
 
-| Region | 2017 | 2021 | 2026 | Change |
+<!-- table: large_flat_share -->
+| Region | 2017 | 2021 | Latest year | Change |
 |---|---|---|---|---|
-| Central | 22.9% | 23.6% | 17.6% | −5.3 pts |
-| East | 37.6% | 39.2% | 35.0% | −2.6 pts |
-| North | 33.5% | 36.8% | 31.5% | −2.0 pts |
-| North-East | 34.3% | 36.1% | 30.5% | −3.8 pts |
-| West | 34.2% | 38.3% | 33.4% | −0.8 pts |
+| Central | 22.9% | 23.6% | 17.6% | -5.3 pts |
+| East | 37.6% | 39.2% | 35.0% | -2.6 pts |
+| North | 33.5% | 36.8% | 31.5% | -2.0 pts |
+| North-East | 34.3% | 36.1% | 30.5% | -3.8 pts |
+| West | 34.2% | 38.3% | 33.4% | -0.8 pts |
+<!-- /table -->
 
 **Not supported.** Every region moves in the same direction — up to 2021, down by 2026
 — and the largest fall is in Central, the opposite of the prediction. There is no
