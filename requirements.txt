@@ -8,7 +8,7 @@ python-dotenv>=1.0
 duckdb>=1.1
 dbt-duckdb>=1.11,<2
 
-# Hedonic model (hedonic.py). statsmodels rather than scikit-learn: the model is read
+# Hedonic model (pricing/hedonic.py). statsmodels rather than scikit-learn: the model is read
 # for its coefficients, which need standard errors, and scikit-learn reports none.
 numpy>=1.26
 statsmodels>=0.14

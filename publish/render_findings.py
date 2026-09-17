@@ -11,8 +11,8 @@ and the data-cut stamp between <!-- edition --> and <!-- /edition -->. Everythin
 outside the markers is left byte for byte, including numbers quoted inside sentences,
 which stay hand-written and get re-read whenever an edition is refreshed.
 
-    python render_findings.py           # rewrite both documents from published/
-    python render_findings.py --check   # exit 1 if either is out of date (CI)
+    python -m publish.render_findings           # rewrite both documents from published/
+    python -m publish.render_findings --check   # exit 1 if either is out of date (CI)
 """
 
 import argparse
@@ -20,7 +20,7 @@ import datetime as dt
 import re
 import sys
 
-import edition
+from publish import edition
 
 # The README carries the edition stamp too, so its headline numbers never float free of
 # the data cut they came from.
@@ -313,7 +313,7 @@ def main():
 
     # Every document is checked before failing, so one run names all the stale ones.
     if stale:
-        print("Run: python render_findings.py")
+        print("Run: python -m publish.render_findings")
         sys.exit(1)
 
 

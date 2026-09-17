@@ -47,39 +47,40 @@ It's the most technical page in the project, so here's the short version first.
 ## Architecture
 
 ```
- data.gov.sg API        Wikidata (SPARQL)        OneMap API
-       |                       |                     |
-       v                       v                     v
- ingest_hdb.py          ingest_mrt_data.py    onemap_utils.py
- month partitions       fetch + archive       geocode 9,744 blocks
-       |                       |                     |
-       +-----------------------+---------------------+
-                               v
-                     +-------------------+
-                     |  data/bronze/     |  Immutable. Parquet only.
-                     +---------+---------+
-                               v
-                     +-------------------+
-                     |  DuckDB + dbt     |  Reads the parquet in place. No load step.
-                     |                   |
-                     |  silver (3)       |  Typing, parsing, normalisation
-                     |  gold (5)         |  Star schema
-                     |  analysis (5)     |  Hedonic model: dbt Python models
-                     |  marts (13)       |  One table per published figure
-                     +---------+---------+  105 data tests
-                               v
-                     +-------------------+
-                     | publish_edition.py|  Deliberate, not scheduled
-                     +---------+---------+
-                               v
-                     +-------------------+
-                     |  published/       |  Committed. 13 mart CSVs, one sales
-                     +----+---------+----+  parquet, a stamp naming the data cut
-                          |         |
-                          v         v
-               dashboard.py     render_findings.py
-               Findings and     fills the tables in
-               Explore pages    FINDINGS.md and README.md
+ data.gov.sg API          Wikidata (SPARQL)        OneMap API
+       |                         |                     |
+       v                         v                     v
+ ingest/hdb_resale.py     ingest/mrt_stations.py   ingest/block_locations.py
+ month partitions         fetch + archive          geocode 9,744 blocks
+       |                         |                     |
+       +-------------------------+---------------------+
+                                 v
+                       +--------------------+
+                       |  data/bronze/      |  Immutable. Parquet only.
+                       +---------+----------+
+                                 v
+                       +--------------------+
+                       |  DuckDB + dbt      |  Reads the parquet in place. No load step.
+                       |                    |
+                       |  silver (3)        |  Typing, parsing, normalisation
+                       |  gold (5)          |  Star schema
+                       |  analysis (5)      |  Hedonic model: dbt Python models
+                       |  marts (13)        |  One table per published figure
+                       +---------+----------+  105 data tests
+                                 v
+                       +--------------------+
+                       |  publish/          |  build_edition.py: deliberate,
+                       |  build_edition.py  |  not scheduled
+                       +---------+----------+
+                                 v
+                       +--------------------+
+                       |  published/        |  Committed. 13 mart CSVs, one sales
+                       +----+----------+----+  parquet, a stamp naming the data cut
+                            |          |
+                            v          v
+                        app.py      publish/render_findings.py
+                    Findings and    fills the tables in
+                    Explore pages   FINDINGS.md and README.md
 
 Built and tested by GitHub Actions on every pull request.
 ```
@@ -200,7 +201,7 @@ data, built by the same `dbt build`, and gated by tests that fail the build.
 
 **The model runs inside dbt.** `hedonic_coefficients.py` and its siblings are dbt-duckdb
 Python models, but each is a few lines: it hands the `hedonic_sales` table to a plain
-function in [hedonic.py](../hedonic.py) or [valuation.py](../valuation.py) and returns
+function in [pricing/hedonic.py](../pricing/hedonic.py) or [pricing/valuation.py](../pricing/valuation.py) and returns
 the result. The statistics live in modules pytest can import without dbt, a warehouse,
 or any file on disk.
 
@@ -229,7 +230,7 @@ fails loudly instead of fitting quietly.
 | `assert_fair_value_verdicts_follow_the_rules` | A block is called above, below or in line without 10+ sales and a 95% interval on the right side of zero |
 | `assert_mrt_bands_reconcile_to_fact` | Band counts stop summing to the fact: a gap or overlap between band edges |
 
-**The edition is the only bridge to a reader.** `publish_edition.py` exports the 13 marts
+**The edition is the only bridge to a reader.** `publish/build_edition.py` exports the 13 marts
 as CSV, every sale as one zstd parquet file in a fixed row order, and `edition.json`,
 which stamps the data cut. The directory is committed. The dashboard reads it and nothing
 else, locally too, so a fresh clone runs the dashboard with no API key and no warehouse,
@@ -239,8 +240,8 @@ when someone republishes, re-reads the prose against the new numbers, and commit
 
 **Documents are generated where they can be, and checked where they cannot.** Every table
 in FINDINGS.md sits between `<!-- table: name -->` markers and is filled from the edition
-by [render_findings.py](../render_findings.py). The README carries the edition stamp the
-same way. `render_findings.py --check` runs in CI and fails if either document differs
+by [publish/render_findings.py](../publish/render_findings.py). The README carries the edition stamp the
+same way. `publish/render_findings.py --check` runs in CI and fails if either document differs
 from what the committed edition would render. Moving the hand-typed tables to markers
 reproduced every hand-typed row exactly, and showed the CBD table had skipped the 18km
 ring. Numbers quoted inside sentences stay hand-written, and are re-read on every
@@ -248,7 +249,7 @@ republish.
 
 **The two dashboard pages are kept honest with each other.** Findings shows published
 marts with no filters. Explore recomputes the descriptive figures in pandas under
-whatever filters the reader picks ([explore.py](../explore.py)). `check_explore_parity.py`
+whatever filters the reader picks ([dashboard/explore.py](../dashboard/explore.py)). `dashboard/check_parity.py`
 runs Explore's maths unfiltered and fails if the result differs from the SQL marts beyond
 their rounding, on both the committed edition and one CI publishes from the fixture. Two
 implementations of one number either agree or the build is red.
@@ -387,26 +388,29 @@ visible at the end of every run rather than discovered months later.
 
 ## Running it
 
+Every command runs from the repository root. The scripts live in folders, so they run
+as modules with `python -m folder.script`.
+
 **Just the dashboard.** It reads the committed edition, so this needs no API key, no
 ingest and no warehouse:
 
 ```bash
 pip install -r requirements.txt
-streamlit run dashboard.py
+streamlit run app.py
 ```
 
 **The whole pipeline, from nothing:**
 
 ```bash
-python ingest_hdb.py --full           # ~240k rows, 48 API pages, about four minutes
-python ingest_mrt_data.py             # MRT/LRT stations from Wikidata
-python onemap_utils.py --target hdb   # geocode every block via OneMap, about half an hour
+python -m ingest.hdb_resale --full    # ~240k rows, 48 API pages, about four minutes
+python -m ingest.mrt_stations         # MRT/LRT stations from Wikidata
+python -m ingest.block_locations      # geocode every block via OneMap, about half an hour
 dbt deps && dbt build                 # 26 models, 105 tests, about 30 seconds
-python publish_edition.py             # refresh published/
-python render_findings.py             # refill the tables in FINDINGS.md and README.md
+python -m publish.build_edition       # refresh published/
+python -m publish.render_findings     # refill the tables in FINDINGS.md and README.md
 ```
 
-Subsequent runs need no flags: `python ingest_hdb.py` fetches from the high-water
+Subsequent runs need no flags: `python -m ingest.hdb_resale` fetches from the high-water
 mark, the geocoder requests only addresses it has not seen, and `dbt build` runs the
 fact incrementally. Publishing is a separate, deliberate step: re-read the prose in
 FINDINGS.md against the new numbers before committing an edition.
@@ -418,11 +422,11 @@ harder without one.
 **Offline, against the committed 766-row sample** -- this is what CI does:
 
 ```bash
-python seed_fixture.py
+python -m ingest.seed_fixture
 export DUCKDB_PATH=data/fixture/warehouse.duckdb
 dbt build --vars '{bronze_glob: "data/fixture/hdb_resale/month=*/*.parquet"}'
-python publish_edition.py --out data/fixture/published
-python check_explore_parity.py --edition data/fixture/published
+python -m publish.build_edition --out data/fixture/published
+python -m dashboard.check_parity --edition data/fixture/published
 ```
 
 On the fixture, fair value legitimately returns no verdicts: no block has 10 sales.
@@ -435,33 +439,41 @@ serve` opens the lineage graph and the column documentation.
 ## Repository layout
 
 ```
-ingest_hdb.py            Bronze ingest. Partitioned writes, high-water-mark read.
-ingest_mrt_data.py       MRT stations from Wikidata. Fetch and archive only.
-onemap_utils.py          Geocoding via OneMap. Feeds dim_block.
-seed_fixture.py          Materialises the committed CSV samples into a bronze layer.
+app.py                        The dashboard: run it with `streamlit run app.py`.
 
-models/silver/           Typing, parsing, normalisation.
-models/gold/             Star schema: one fact, four dimensions.
-models/analysis/         hedonic_sales, and the dbt Python models that fit it.
-models/marts/            One table per published figure.
-macros/                  The MRT and lease band definitions, each in one place.
-hedonic.py               The hedonic fit, across all years and per year.
-valuation.py             Block holdout validation and fair value.
+ingest/                       Getting the data in
+  hdb_resale.py               Resale sales from data.gov.sg. Month partitions, high-water mark.
+  mrt_stations.py             MRT and LRT stations from Wikidata. Fetch and archive only.
+  block_locations.py          A map location for every block, via OneMap. Feeds dim_block.
+  seed_fixture.py             Turns the committed CSV samples into a bronze layer for CI.
 
-publish_edition.py       Warehouse -> published/. The only bridge to a reader.
-published/               The committed edition: mart CSVs, sales parquet, stamp.
-edition.py               Reads the edition, for everything downstream of it.
-render_findings.py       Fills the generated tables in FINDINGS.md and README.md.
-explore.py               The Explore page's maths, in pandas.
-check_explore_parity.py  Explore, unfiltered, must equal the published marts.
-charts.py                Chart builders shared by both dashboard pages.
-dashboard.py             Streamlit: Findings and Explore pages.
+models/                       dbt: cleaning, organising and modelling the data
+  silver/                     Typing, parsing, normalisation.
+  gold/                       Star schema: one fact, four dimensions.
+  analysis/                   hedonic_sales, and the dbt Python models that fit it.
+  marts/                      One table per published figure.
+macros/                       The MRT and lease band definitions, each in one place.
 
-tests/dbt/               Singular dbt tests, including the model's quality gates.
-tests/python/            Pytest: ingest, model, edition, documents. Fully offline.
-tests/fixtures/          766-row stratified sample, so CI never calls the API.
-.github/workflows/       CI on every PR, scheduled ingest monthly.
-docs/                    This document, the analytics plan, and the screenshots.
+pricing/                      The pricing model, called by the dbt Python models
+  hedonic.py                  The hedonic fit, across all years and per year.
+  valuation.py                Block holdout validation and fair value.
+
+publish/                      Sharing the results
+  build_edition.py            Warehouse -> published/. The only bridge to a reader.
+  edition.py                  Reads the edition, for everything downstream of it.
+  render_findings.py          Fills the generated tables in FINDINGS.md and README.md.
+published/                    The committed edition: mart CSVs, sales parquet, stamp.
+
+dashboard/                    The dashboard's building blocks
+  charts.py                   Chart builders shared by both pages.
+  explore.py                  The Explore page's maths, in pandas.
+  check_parity.py             Explore, unfiltered, must equal the published marts.
+
+tests/dbt/                    Singular dbt tests, including the model's quality gates.
+tests/python/                 Pytest: ingest, model, edition, documents. Fully offline.
+tests/fixtures/               766-row stratified sample, so CI never calls the API.
+.github/workflows/            CI on every PR, scheduled ingest monthly.
+docs/                         This document, the analytics plan, and the screenshots.
 ```
 
 ---

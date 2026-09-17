@@ -1,11 +1,11 @@
-"""Geocode HDB block addresses and school postal codes via OneMap into Bronze.
+"""Geocode HDB block addresses via OneMap into Bronze.
 
 Runs incrementally by default: reads the coordinates already on disk and requests
 only the addresses missing from it. A geocoded address never changes, so unlike the
 resale ingest there is no overlap window to re-fetch -- an address either has
 coordinates or it does not. Pass --full to re-request everything.
 
-This matters at the current scale: the Bronze layer holds 9,738 unique addresses,
+This matters at the current scale: the Bronze layer holds 9,744 unique addresses,
 so a full rebuild is ~33 minutes of API calls, while topping up the missing few
 hundred takes about two.
 
@@ -13,9 +13,8 @@ Addresses that cannot be resolved are reported by name and reason at the end of 
 run rather than dropped in silence, since a missing coordinate silently removes
 those transactions from the silver layer downstream.
 
-Outputs:
-    data/bronze/hdb_coordinates.parquet       address, latitude, longitude, postal_code
-    data/bronze/schools_coordinates.parquet   same shape, keyed by postal code
+Output:
+    data/bronze/hdb_coordinates.parquet   address, latitude, longitude, postal_code
 """
 
 import argparse
@@ -37,9 +36,7 @@ ONEMAP_EMAIL = raw_email.strip() if raw_email else None
 ONEMAP_PASSWORD = raw_password.strip() if raw_password else None
 
 HDB_SOURCE = "data/bronze/hdb_resale"  # partitioned dataset; pyarrow discovers month=*
-SCHOOL_SOURCE = "data/bronze/schools_raw.parquet"
 OUTPUT_PATH = "data/bronze/hdb_coordinates.parquet"
-OUTPUT_PATH2 = "data/bronze/schools_coordinates.parquet"
 
 TOKEN_URL = "https://www.onemap.gov.sg/api/auth/post/getToken"
 SEARCH_URL = "https://www.onemap.gov.sg/api/common/elastic/search"
@@ -218,7 +215,7 @@ def resolve_missing(wanted, existing_df, full_rebuild, label):
 def build_bronze_geodata(full_rebuild=False):
     """Geocode every unique HDB block address in the Bronze resale file."""
     if not os.path.exists(HDB_SOURCE):
-        raise GeocodeError(f"{HDB_SOURCE} not found. Run ingest_hdb.py first.")
+        raise GeocodeError(f"{HDB_SOURCE} not found. Run python -m ingest.hdb_resale first.")
 
     hdb_df = pd.read_parquet(HDB_SOURCE)
     hdb_df["address"] = hdb_df["block"] + " " + hdb_df["street_name"]
@@ -236,37 +233,8 @@ def build_bronze_geodata(full_rebuild=False):
     return merge_and_save(existing_df, new_df, OUTPUT_PATH, "HDB")
 
 
-def build_bronze_school_data(full_rebuild=False):
-    """Geocode schools by postal code, which resolves far more reliably than names."""
-    if not os.path.exists(SCHOOL_SOURCE):
-        raise GeocodeError(f"{SCHOOL_SOURCE} not found.")
-
-    school_df = pd.read_parquet(SCHOOL_SOURCE)
-    # Zero-pad: postal codes stored as integers lose a leading zero (e.g. 048123).
-    # sorted(set(...)) because several schools share a postal code, and the old code
-    # geocoded the raw list -- paying for duplicate lookups and writing duplicate rows.
-    wanted = sorted(set(school_df["postal_code"].astype(str).str.zfill(6)))
-
-    existing_df = None if full_rebuild else load_existing(OUTPUT_PATH2)
-    missing, existing_df = resolve_missing(wanted, existing_df, full_rebuild, "Schools")
-
-    if not missing:
-        print("School coordinates already complete. Nothing to do.")
-        return existing_df
-
-    new_df, failures = geocode_addresses(missing, get_onemap_token())
-    report_failures(failures)
-    return merge_and_save(existing_df, new_df, OUTPUT_PATH2, "school")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument(
-        "--target",
-        choices=["hdb", "schools", "both"],
-        default="both",
-        help="Which coordinate set to build (default: both).",
-    )
     parser.add_argument(
         "--full",
         action="store_true",
@@ -274,7 +242,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.target in ("hdb", "both"):
-        build_bronze_geodata(full_rebuild=args.full)
-    if args.target in ("schools", "both"):
-        build_bronze_school_data(full_rebuild=args.full)
+    build_bronze_geodata(full_rebuild=args.full)

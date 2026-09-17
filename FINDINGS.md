@@ -475,7 +475,7 @@ In plain terms:
 - **It's tested before it touches real data:** the code has to find effects that were
   deliberately planted in made-up data.
 
-The code is in [hedonic.py](hedonic.py). The model turns "flats near stations sell for
+The code is in [pricing/hedonic.py](pricing/hedonic.py). The model turns "flats near stations sell for
 7.2% more" into "being within 400m of a station is worth about 19%, for a flat in the
 same town, with the same lease, floor, flat type and month". It does still assume each
 effect is the same everywhere, so a station counts for the same in Bishan as in

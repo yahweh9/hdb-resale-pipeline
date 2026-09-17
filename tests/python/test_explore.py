@@ -1,14 +1,14 @@
 """The Explore page's maths: filter-aware descriptive figures on tiny hand-built sales.
 
 Each function must return the same columns as the published mart it mirrors, so the
-dashboard draws both with one chart; check_explore_parity.py proves the numbers agree
+dashboard draws both with one chart; dashboard/check_parity.py proves the numbers agree
 when nothing is filtered.
 """
 
 import pandas as pd
 import pytest
 
-import explore
+from dashboard import explore
 
 
 def sales(rows):

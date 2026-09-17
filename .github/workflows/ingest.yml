@@ -60,13 +60,13 @@ jobs:
       - name: Ingest resale transactions
         env:
           API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
-        run: python ingest_hdb.py
+        run: python -m ingest.hdb_resale
 
       # Fetched fresh every run rather than carried over. It is one SPARQL query, and
       # the archive is deliberately unfiltered so silver re-decides which stations are
       # open -- which only helps if the archive knows about the ones that just opened.
       - name: Ingest MRT/LRT stations from Wikidata
-        run: python ingest_mrt_data.py
+        run: python -m ingest.mrt_stations
 
       # Incremental: requests only addresses not already in hdb_coordinates.parquet.
       # On a cache miss that is all of them. Unresolvable addresses are reported and
@@ -76,7 +76,7 @@ jobs:
         env:
           ONEMAP_EMAIL: ${{ secrets.ONEMAP_EMAIL }}
           ONEMAP_PASSWORD: ${{ secrets.ONEMAP_PASSWORD }}
-        run: python onemap_utils.py --target hdb
+        run: python -m ingest.block_locations
 
       # Saved as soon as bronze is complete, not at the end of the job. A failing data
       # test says nothing about the bronze files, and a combined cache step would

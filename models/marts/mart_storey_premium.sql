@@ -64,7 +64,7 @@ select
     round(controlled.multiplier, 3)                                       as controlled_multiplier,
     controlled.cells                                                      as comparison_cells
 -- Full join: a tier can have controlled comparisons without a 4-room sale, or the
--- reverse. Dropping it from one side would make this mart disagree with explore.py.
+-- reverse. Dropping it from one side would make this mart disagree with dashboard/explore.py.
 from naive
 full join controlled using (floor_tier)
 order by tier_order

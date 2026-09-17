@@ -1,4 +1,4 @@
-"""Chart builders for the dashboard, fed by published marts or explore.py alike.
+"""Chart builders for the dashboard, fed by published marts or dashboard/explore.py alike.
 
 Every builder takes a tidy frame with the marts' column names, so the Findings page and
 the Explore page draw a figure with the same function -- the only difference between

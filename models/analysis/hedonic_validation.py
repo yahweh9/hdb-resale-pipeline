@@ -5,7 +5,7 @@ town x flat type median baseline. assert_model_beats_baseline turns the result i
 build check: a model that stops beating the lazy guess fails the build.
 """
 
-import valuation
+from pricing import valuation
 
 
 def model(dbt, session):

@@ -7,7 +7,7 @@ into a tmp_path, so nothing touches data.gov.sg or the real data/ directory.
 import pandas as pd
 import pytest
 
-import ingest_hdb
+from ingest import hdb_resale
 
 
 @pytest.fixture
@@ -16,15 +16,15 @@ def bronze(tmp_path, monkeypatch):
     root = tmp_path / "bronze" / "hdb_resale"
     # as_posix() matters: PARTITION_GLOB is handed to DuckDB, which does not treat a
     # Windows backslash as a path separator.
-    monkeypatch.setattr(ingest_hdb, "BRONZE_ROOT", root.as_posix())
-    monkeypatch.setattr(ingest_hdb, "PARTITION_GLOB", f"{root.as_posix()}/month=*/*.parquet")
+    monkeypatch.setattr(hdb_resale, "BRONZE_ROOT", root.as_posix())
+    monkeypatch.setattr(hdb_resale, "PARTITION_GLOB", f"{root.as_posix()}/month=*/*.parquet")
     return root
 
 
 @pytest.fixture(autouse=True)
 def no_sleeping(monkeypatch):
     """Retry backoff is real seconds. Tests should not spend them."""
-    monkeypatch.setattr(ingest_hdb.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(hdb_resale.time, "sleep", lambda _seconds: None)
 
 
 def records(month, ids):

@@ -7,7 +7,7 @@ wholesale would delete rows that were never re-fetched.
 
 import pytest
 
-import ingest_hdb
+from ingest import hdb_resale
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def pages(monkeypatch):
     def install(*chunks, total=None):
         served = []
         page_size = max(len(c) for c in chunks)
-        monkeypatch.setattr(ingest_hdb, "CHUNK_SIZE", page_size)
+        monkeypatch.setattr(hdb_resale, "CHUNK_SIZE", page_size)
         api_total = sum(len(c) for c in chunks) if total is None else total
 
         def fake_request_chunk(offset):
@@ -31,7 +31,7 @@ def pages(monkeypatch):
             page = chunks[index] if index < len(chunks) else []
             return {"records": list(page), "total": api_total}
 
-        monkeypatch.setattr(ingest_hdb, "request_chunk", fake_request_chunk)
+        monkeypatch.setattr(hdb_resale, "request_chunk", fake_request_chunk)
         return served
 
     return install
@@ -44,7 +44,7 @@ def rows(month, count):
 def test_a_full_load_keeps_every_page(pages):
     served = pages(rows("2024-03", 2), rows("2024-02", 2), rows("2024-01", 1))
 
-    records, total = ingest_hdb.fetch_records(latest_month=None)
+    records, total = hdb_resale.fetch_records(latest_month=None)
 
     assert len(records) == 5
     assert total == 5
@@ -54,7 +54,7 @@ def test_a_full_load_keeps_every_page(pages):
 def test_an_incremental_run_stops_once_it_crosses_the_mark(pages):
     served = pages(rows("2024-03", 2), rows("2024-02", 2), rows("2024-01", 2))
 
-    records, _ = ingest_hdb.fetch_records(latest_month="2024-02")
+    records, _ = hdb_resale.fetch_records(latest_month="2024-02")
 
     assert {r["month"] for r in records} == {"2024-03", "2024-02"}
     # Three pages are read, not four: the run stops on the first page that contains
@@ -72,7 +72,7 @@ def test_the_mark_month_comes_back_whole(pages):
     straddling_page = rows("2024-02", 3) + rows("2024-01", 4)
     pages(rows("2024-03", 1), straddling_page)
 
-    records, _ = ingest_hdb.fetch_records(latest_month="2024-02")
+    records, _ = hdb_resale.fetch_records(latest_month="2024-02")
 
     assert len([r for r in records if r["month"] == "2024-02"]) == 3
     assert not [r for r in records if r["month"] == "2024-01"]
@@ -81,7 +81,7 @@ def test_the_mark_month_comes_back_whole(pages):
 def test_an_up_to_date_run_returns_nothing_rather_than_failing(pages):
     pages(rows("2024-01", 3))
 
-    records, _ = ingest_hdb.fetch_records(latest_month="2024-09")
+    records, _ = hdb_resale.fetch_records(latest_month="2024-09")
 
     assert records == []
 
@@ -90,6 +90,6 @@ def test_paging_stops_at_the_reported_total(pages):
     """Do not keep asking for pages the API has already said do not exist."""
     served = pages(rows("2024-03", 2), total=1)
 
-    ingest_hdb.fetch_records(latest_month=None)
+    hdb_resale.fetch_records(latest_month=None)
 
     assert served == [0]

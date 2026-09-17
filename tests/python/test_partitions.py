@@ -6,12 +6,12 @@ import os
 import pandas as pd
 import pytest
 
-import ingest_hdb
+from ingest import hdb_resale
 from conftest import records
 
 
 def test_partition_dir_builds_a_hive_path(bronze):
-    assert ingest_hdb.partition_dir("2024-06").endswith("month=2024-06")
+    assert hdb_resale.partition_dir("2024-06").endswith("month=2024-06")
 
 
 @pytest.mark.parametrize(
@@ -30,12 +30,12 @@ def test_partition_dir_builds_a_hive_path(bronze):
     ],
 )
 def test_partition_dir_refuses_anything_that_is_not_a_month(month):
-    with pytest.raises(ingest_hdb.IngestError):
-        ingest_hdb.partition_dir(month)
+    with pytest.raises(hdb_resale.IngestError):
+        hdb_resale.partition_dir(month)
 
 
 def test_write_partitions_lays_out_one_directory_per_month(bronze):
-    ingest_hdb.write_partitions(pd.concat([records("2024-01", [1, 2]), records("2024-02", [3])]))
+    hdb_resale.write_partitions(pd.concat([records("2024-01", [1, 2]), records("2024-02", [3])]))
 
     assert sorted(os.listdir(bronze)) == ["month=2024-01", "month=2024-02"]
     assert os.path.exists(bronze / "month=2024-01" / "part-0.parquet")
@@ -43,7 +43,7 @@ def test_write_partitions_lays_out_one_directory_per_month(bronze):
 
 def test_month_is_in_the_path_and_not_in_the_file(bronze):
     """Carrying month in both places is a duplicate column the reader rejects."""
-    ingest_hdb.write_partitions(records("2024-01", [1, 2]))
+    hdb_resale.write_partitions(records("2024-01", [1, 2]))
 
     body = pd.read_parquet(bronze / "month=2024-01" / "part-0.parquet")
     assert "month" not in body.columns
@@ -52,37 +52,37 @@ def test_month_is_in_the_path_and_not_in_the_file(bronze):
 
 def test_rerunning_a_month_replaces_it_and_touches_nothing_else(bronze):
     """The whole point of partitioning: March replaces March, February is untouched."""
-    ingest_hdb.write_partitions(pd.concat([records("2024-01", [1, 2, 3]), records("2024-02", [9])]))
+    hdb_resale.write_partitions(pd.concat([records("2024-01", [1, 2, 3]), records("2024-02", [9])]))
     february = (bronze / "month=2024-02" / "part-0.parquet").read_bytes()
 
-    ingest_hdb.write_partitions(records("2024-01", [7]))
+    hdb_resale.write_partitions(records("2024-01", [7]))
 
     assert list(pd.read_parquet(bronze / "month=2024-01" / "part-0.parquet")["_id"]) == [7]
     assert (bronze / "month=2024-02" / "part-0.parquet").read_bytes() == february
 
 
 def test_write_leaves_no_temp_files_behind(bronze):
-    ingest_hdb.write_partitions(records("2024-01", [1]))
+    hdb_resale.write_partitions(records("2024-01", [1]))
 
     assert glob.glob(f"{bronze.as_posix()}/**/.*.tmp", recursive=True) == []
 
 
 def test_high_water_mark_is_none_before_the_first_run(bronze):
-    assert ingest_hdb.read_high_water_mark() is None
+    assert hdb_resale.read_high_water_mark() is None
 
 
 def test_high_water_mark_is_none_when_a_full_rebuild_is_asked_for(bronze):
-    ingest_hdb.write_partitions(records("2024-02", [1]))
+    hdb_resale.write_partitions(records("2024-02", [1]))
 
-    assert ingest_hdb.read_high_water_mark(full_rebuild=True) is None
+    assert hdb_resale.read_high_water_mark(full_rebuild=True) is None
 
 
 def test_high_water_mark_is_the_newest_partition(bronze):
-    ingest_hdb.write_partitions(
+    hdb_resale.write_partitions(
         pd.concat([records("2023-12", [1]), records("2024-02", [2]), records("2024-01", [3])])
     )
 
-    assert ingest_hdb.read_high_water_mark() == "2024-02"
+    assert hdb_resale.read_high_water_mark() == "2024-02"
 
 
 def test_high_water_mark_follows_the_partitions_when_one_disappears(bronze):
@@ -92,13 +92,13 @@ def test_high_water_mark_follows_the_partitions_when_one_disappears(bronze):
     before writing 2024-02 leaves a mark of 2024-01, so the next run re-fetches from
     there. A stored mark would have been advanced already and 2024-02 would be lost.
     """
-    ingest_hdb.write_partitions(pd.concat([records("2024-01", [1]), records("2024-02", [2])]))
-    assert ingest_hdb.read_high_water_mark() == "2024-02"
+    hdb_resale.write_partitions(pd.concat([records("2024-01", [1]), records("2024-02", [2])]))
+    assert hdb_resale.read_high_water_mark() == "2024-02"
 
     for f in glob.glob(f"{bronze.as_posix()}/month=2024-02/*"):
         os.remove(f)
 
-    assert ingest_hdb.read_high_water_mark() == "2024-01"
+    assert hdb_resale.read_high_water_mark() == "2024-01"
 
 
 def test_summarise_runs_against_partitions_on_disk(bronze, capsys):
@@ -108,9 +108,9 @@ def test_summarise_runs_against_partitions_on_disk(bronze, capsys):
     because nothing ever called it. The function prints rather than returns, so the
     assertion is on its output -- weak, but enough to prove it executes.
     """
-    ingest_hdb.write_partitions(pd.concat([records("2024-01", [1, 2]), records("2024-02", [3])]))
+    hdb_resale.write_partitions(pd.concat([records("2024-01", [1, 2]), records("2024-02", [3])]))
 
-    ingest_hdb.summarise(api_total=3)
+    hdb_resale.summarise(api_total=3)
 
     out = capsys.readouterr().out
     assert "Rows on disk : 3" in out
@@ -119,14 +119,14 @@ def test_summarise_runs_against_partitions_on_disk(bronze, capsys):
 
 
 def test_summarise_says_so_when_there_is_nothing(bronze, capsys):
-    ingest_hdb.summarise(api_total=None)
+    hdb_resale.summarise(api_total=None)
 
     assert "No partitions on disk" in capsys.readouterr().out
 
 
 def test_summarise_warns_when_the_api_holds_more(bronze, capsys):
-    ingest_hdb.write_partitions(records("2024-01", [1]))
+    hdb_resale.write_partitions(records("2024-01", [1]))
 
-    ingest_hdb.summarise(api_total=500)
+    hdb_resale.summarise(api_total=500)
 
     assert "499 transactions are missing" in capsys.readouterr().out

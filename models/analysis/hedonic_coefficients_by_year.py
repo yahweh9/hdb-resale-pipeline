@@ -7,7 +7,7 @@ assert_every_substantial_year_is_fitted fails the build if a year that should ha
 fitted did not.
 """
 
-import hedonic
+from pricing import hedonic
 
 
 def model(dbt, session):

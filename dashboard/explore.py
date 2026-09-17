@@ -3,7 +3,7 @@
 Published figures come from marts and never move. These are their exploratory twins:
 the same definitions in pandas, so they can follow the sidebar. Each returns the same
 columns as the mart it mirrors, so one chart function draws both, and
-check_explore_parity.py proves that with nothing filtered the two agree.
+dashboard/check_parity.py proves that with nothing filtered the two agree.
 
 Bands are read from the sales, never re-derived: dim_block classifies MRT bands once,
 on the unrounded distance.

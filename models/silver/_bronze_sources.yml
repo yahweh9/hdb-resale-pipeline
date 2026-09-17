@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: bronze
     description: >
-      The immutable landing zone written by ingest_hdb.py: one Hive-style parquet
+      The immutable landing zone written by ingest/hdb_resale.py: one Hive-style parquet
       partition per transaction month. DuckDB reads the glob directly and recovers
       `month` from the directory names, so there is no load step between the raw
       files and the warehouse.

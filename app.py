@@ -3,22 +3,21 @@
 Findings shows published figures only: every number comes straight from a mart in
 published/, the same numbers FINDINGS.md quotes, and nothing on the page can change them.
 Explore recomputes the descriptive figures from every sale under whatever filters are
-chosen, through explore.py; with nothing filtered it matches the marts, and
-check_explore_parity.py proves it in CI.
+chosen, through dashboard/explore.py; with nothing filtered it matches the marts, and
+dashboard/check_parity.py proves it in CI.
 
 Reads published/ -- never the warehouse, never the API -- so it runs on a host that has
 never seen the pipeline.
 
-    streamlit run dashboard.py
+    streamlit run app.py
 """
 
 import os
 
 import streamlit as st
 
-import charts
-import edition
-import explore
+from dashboard import charts, explore
+from publish import edition
 
 
 @st.cache_data(show_spinner="Reading the edition...")
@@ -229,7 +228,7 @@ def main():
 
     if not os.path.exists(os.path.join(edition.EDITION_DIR, edition.STAMP_FILE)):
         st.error(f"No published edition in {edition.EDITION_DIR}/. Publish one first:")
-        st.code("python ingest_hdb.py --full\ndbt deps && dbt build\npython publish_edition.py",
+        st.code("python -m ingest.hdb_resale --full\ndbt deps && dbt build\npython -m publish.build_edition",
                 language="bash")
         st.stop()
 
