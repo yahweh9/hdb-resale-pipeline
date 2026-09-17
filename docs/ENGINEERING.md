@@ -465,7 +465,8 @@ publish/                      Sharing the results
 published/                    The committed edition: mart CSVs, sales parquet, stamp.
 
 dashboard/                    The dashboard's building blocks
-  charts.py                   Chart builders shared by both pages.
+  charts.py                   Chart builders shared by both pages, with validated colours.
+  theme.py                    The page styles, headline figures, and loading, empty and error states.
   explore.py                  The Explore page's maths, in pandas.
   check_parity.py             Explore, unfiltered, must equal the published marts.
 

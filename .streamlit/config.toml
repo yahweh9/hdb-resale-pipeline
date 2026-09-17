@@ -1,10 +1,10 @@
-# Surfaces are pinned so the chart palette can be validated against a known
-# background. The categorical slots below were checked with the dataviz
-# validator against #1a1a19; letting Streamlit pick its own dark would
-# invalidate the contrast results.
+# The base Streamlit draws its own widgets with -- filters, tables, menus -- so they match
+# the page. The rest of the look (fonts, cards, motion) lives in dashboard/theme.py, and
+# the chart colours in dashboard/charts.py were validated against this white surface.
 [theme]
-base = "dark"
-backgroundColor = "#0d0d0d"
-secondaryBackgroundColor = "#1a1a19"
-textColor = "#ffffff"
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fafafa"
+secondaryBackgroundColor = "#f4f4f5"
+textColor = "#18181b"
 font = "sans serif"
