@@ -5,7 +5,7 @@ with the data cut it was built from. Reading it needs pandas and nothing else --
 DuckDB, no dbt, no warehouse -- which is what lets the dashboard run on a host that
 has never seen the pipeline.
 
-publish_edition.py is the only thing that writes one.
+publish/build_edition.py is the only thing that writes one.
 """
 
 import json

@@ -10,8 +10,8 @@ current; an edition changes only when someone runs this, re-reads the prose in
 FINDINGS.md against the new numbers, and commits both together.
 
     dbt build
-    python publish_edition.py
-    python render_findings.py
+    python -m publish.build_edition
+    python -m publish.render_findings
 """
 
 import argparse
@@ -21,7 +21,7 @@ import os
 
 import duckdb
 
-import edition
+from publish import edition
 
 WAREHOUSE = os.getenv("DUCKDB_PATH", "data/warehouse.duckdb")
 

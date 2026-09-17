@@ -10,7 +10,7 @@ fair_value: which blocks sell above or below what their attributes justify? Each
 in the last 36 months is compared with its own year's fit, and a block gets a verdict
 only when it has enough sales and they agree.
 
-Like hedonic.py, this is plain pandas and numpy so pytest can test it against planted
+Like pricing/hedonic.py, this is plain pandas and numpy so pytest can test it against planted
 answers; the dbt Python models only move data in and out.
 """
 
@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-import hedonic
+from pricing import hedonic
 
 SEED = 2017
 HOLDOUT_SHARE = 0.2

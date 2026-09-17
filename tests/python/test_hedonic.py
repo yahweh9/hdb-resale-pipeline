@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import hedonic
+from pricing import hedonic
 
 from synthetic import FLAT, FLOOR, LEASE, MRT, TOWNS, market
 

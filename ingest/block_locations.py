@@ -215,7 +215,7 @@ def resolve_missing(wanted, existing_df, full_rebuild, label):
 def build_bronze_geodata(full_rebuild=False):
     """Geocode every unique HDB block address in the Bronze resale file."""
     if not os.path.exists(HDB_SOURCE):
-        raise GeocodeError(f"{HDB_SOURCE} not found. Run ingest_hdb.py first.")
+        raise GeocodeError(f"{HDB_SOURCE} not found. Run python -m ingest.hdb_resale first.")
 
     hdb_df = pd.read_parquet(HDB_SOURCE)
     hdb_df["address"] = hdb_df["block"] + " " + hdb_df["street_name"]

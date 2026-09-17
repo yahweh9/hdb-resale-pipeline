@@ -48,7 +48,7 @@ checked against a simple guess), and a dashboard anyone can open.
   the data cut. Aggregates are CSV; row-level sales for exploration are one parquet
   file. It is refreshed deliberately, not monthly.
 - **Dashboard:** always reads the edition, never the warehouse, locally too.
-  `publish_edition.py` is the only bridge between the warehouse and anything a person
+  `publish/build_edition.py` is the only bridge between the warehouse and anything a person
   sees.
 - **Dashboard pages:** Findings pages read pre-computed marts with no free filters. The
   Explore page keeps free filters, with its maths in a unit-tested module.

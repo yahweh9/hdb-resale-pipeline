@@ -322,7 +322,7 @@ def summarise(api_total):
             f"\nWARNING: the API holds {api_total:,} records; this layer has {rows:,}."
             f"\n         {missing:,} transactions are missing, all older than {first}."
             f"\n         Incremental runs only move forward and will never fetch them."
-            f"\n         Run 'python ingest_hdb.py --full' to backfill."
+            f"\n         Run 'python -m ingest.hdb_resale --full' to backfill."
         )
     else:
         print("Coverage     : complete against the API total.")

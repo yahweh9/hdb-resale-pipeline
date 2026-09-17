@@ -4,7 +4,7 @@ Each sale is compared with its own year's fit; a block is called above or below 
 10+ sales and a 95% interval clear of zero (see valuation.fair_value).
 """
 
-import valuation
+from pricing import valuation
 
 
 def model(dbt, session):

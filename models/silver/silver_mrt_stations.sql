@@ -4,7 +4,7 @@
     Grain: one row per operational MRT/LRT station.
 
     Reads the unfiltered Wikidata response (353 rows, 233 stations) and does all the
-    narrowing here. It used to happen in ingest_mrt_data.py, which meant the exclusion
+    narrowing here. It used to happen in ingest/mrt_stations.py, which meant the exclusion
     rules were invisible to the warehouse, untested, and could only be re-evaluated by
     re-querying Wikidata. The Python side now fetches and archives; deciding what the
     response MEANS is this layer's job.

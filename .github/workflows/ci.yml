@@ -30,7 +30,7 @@ jobs:
         run: pytest
 
       - name: Seed the fixture bronze layer
-        run: python seed_fixture.py
+        run: python -m ingest.seed_fixture
 
       - name: Build the warehouse and run the data tests
         run: |
@@ -42,14 +42,14 @@ jobs:
       # columns the edition expects. It never writes to published/: only a deliberate
       # local publish changes what the dashboard and FINDINGS.md show.
       - name: Publish a smoke-test edition from the fixture
-        run: python publish_edition.py --out data/fixture/published
+        run: python -m publish.build_edition --out data/fixture/published
 
       - name: FINDINGS.md and README.md match the committed edition
-        run: python render_findings.py --check
+        run: python -m publish.render_findings --check
 
       # The Explore page recomputes the descriptive figures in pandas; unfiltered, they
       # must equal the SQL marts. Checked on the edition CI just built and the committed one.
       - name: Explore matches the published marts
         run: |
-          python check_explore_parity.py --edition data/fixture/published
-          python check_explore_parity.py
+          python -m dashboard.check_parity --edition data/fixture/published
+          python -m dashboard.check_parity

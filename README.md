@@ -113,11 +113,29 @@ or to download anything first:
 
 ```bash
 pip install -r requirements.txt
-streamlit run dashboard.py
+streamlit run app.py
 ```
 
 It has two pages: **Findings**, with the main results, and **Explore**, where you can
 filter the data yourself.
+
+---
+
+## What's in this repo
+
+| Folder | What's inside |
+|---|---|
+| `ingest/` | The scripts that download the data |
+| `models/` and `macros/` | The dbt SQL that cleans and organises it |
+| `pricing/` | The pricing model |
+| `publish/` | Saving the final numbers and filling in the tables in FINDINGS.md |
+| `published/` | The saved numbers that the dashboard reads |
+| `app.py` and `dashboard/` | The Streamlit dashboard |
+| `tests/` | The automatic checks |
+| `docs/` | The longer write-ups and the screenshots |
+
+The files at the top level, like `dbt_project.yml`, `profiles.yml` and
+`requirements.txt`, are settings files that the tools expect to find there.
 
 ---
 

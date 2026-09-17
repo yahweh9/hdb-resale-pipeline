@@ -5,11 +5,11 @@ pull request, which is slow, rate-limited, and turns an unrelated API outage int
 red build. This writes a 766-row sample -- stratified so every flat type and most
 months are represented -- into a root of its own.
 
-It writes through ingest_hdb.write_partitions rather than reimplementing the layout,
+It writes through hdb_resale.write_partitions rather than reimplementing the layout,
 so the fixture cannot drift from what the real ingest produces: change the partition
 scheme and this changes with it, or the tests fail.
 
-    python seed_fixture.py
+    python -m ingest.seed_fixture
     export DUCKDB_PATH=data/fixture/warehouse.duckdb
     dbt build --vars '{bronze_glob: "data/fixture/hdb_resale/month=*/*.parquet"}'
 """
@@ -19,7 +19,7 @@ import sys
 
 import pandas as pd
 
-import ingest_hdb
+from ingest import hdb_resale
 
 FIXTURE_CSV = "tests/fixtures/hdb_resale_sample.csv"
 FIXTURE_ROOT = "data/fixture/hdb_resale"
@@ -36,7 +36,7 @@ SPATIAL_FIXTURES = {
 
 def seed(root=FIXTURE_ROOT):
     """Write the fixture as month partitions under `root`. Returns {month: rows}."""
-    if os.path.normpath(root) == os.path.normpath(ingest_hdb.BRONZE_ROOT):
+    if os.path.normpath(root) == os.path.normpath(hdb_resale.BRONZE_ROOT):
         # write_partitions replaces a month wholesale. Pointed at the real bronze
         # root it would quietly swap ~240k live rows for 766 fixture ones.
         raise SystemExit(f"Refusing to seed the fixture into the real bronze root: {root}")
@@ -47,12 +47,12 @@ def seed(root=FIXTURE_ROOT):
     df["_id"] = df["_id"].astype("int64")
     df["_ingested_at"] = pd.Timestamp.now(tz="UTC")
 
-    original_root = ingest_hdb.BRONZE_ROOT
-    ingest_hdb.BRONZE_ROOT = root
+    original_root = hdb_resale.BRONZE_ROOT
+    hdb_resale.BRONZE_ROOT = root
     try:
-        written = ingest_hdb.write_partitions(df)
+        written = hdb_resale.write_partitions(df)
     finally:
-        ingest_hdb.BRONZE_ROOT = original_root
+        hdb_resale.BRONZE_ROOT = original_root
 
     print(f"Seeded {sum(written.values()):,} fixture rows into {root}")
     seed_spatial()

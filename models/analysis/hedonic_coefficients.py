@@ -4,12 +4,12 @@ A dbt Python model so the fit sits in the same dependency graph as everything it
 and everything that will read it: `dbt build` refreshes gold, refits the model, then
 runs the tests on its output, in that order, every time.
 
-The fitting itself lives in hedonic.py at the repository root (on the path via
-module_paths in profiles.yml). This file only moves data in and out, so the maths is
+The fitting itself lives in pricing/hedonic.py, importable here because module_paths in
+profiles.yml puts the repository root on the path. This file only moves data in and out, so the maths is
 tested by pytest against planted answers rather than only here against real data.
 """
 
-import hedonic
+from pricing import hedonic
 
 
 def model(dbt, session):

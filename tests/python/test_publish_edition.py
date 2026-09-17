@@ -9,8 +9,7 @@ import json
 import duckdb
 import pytest
 
-import edition
-import publish_edition
+from publish import build_edition, edition
 
 
 def warehouse(sales_rows=3):
@@ -58,13 +57,13 @@ def warehouse(sales_rows=3):
     """)
     # Every other published mart only has to exist: these tests are about the export,
     # and the marts' own columns are tested where dbt builds them.
-    for table in publish_edition.MART_TABLES:
+    for table in build_edition.MART_TABLES:
         con.execute(f"create table if not exists marts.{table} as select 1 as placeholder")
     return con
 
 
 def test_publish_writes_every_file_the_edition_promises(tmp_path):
-    publish_edition.publish(warehouse(), tmp_path, "2026-09-14")
+    build_edition.publish(warehouse(), tmp_path, "2026-09-14")
 
     assert (tmp_path / "mart_mrt_premium_by_band.csv").exists()
     assert (tmp_path / edition.SALES_FILE).exists()
@@ -72,18 +71,18 @@ def test_publish_writes_every_file_the_edition_promises(tmp_path):
 
 
 def test_the_stamp_names_the_data_cut_not_the_day_it_was_written(tmp_path):
-    stamp = publish_edition.publish(warehouse(sales_rows=3), tmp_path, "2026-09-14")
+    stamp = build_edition.publish(warehouse(sales_rows=3), tmp_path, "2026-09-14")
 
     assert stamp == edition.read_stamp(tmp_path)
     assert stamp["data_through"] == "2026-09"
     assert stamp["sales"] == 3
     assert stamp["published_on"] == "2026-09-14"
-    assert stamp["tables"] == publish_edition.MART_TABLES
+    assert stamp["tables"] == build_edition.MART_TABLES
 
 
 def test_a_mart_round_trips_through_the_reader_unchanged(tmp_path):
     con = warehouse()
-    publish_edition.publish(con, tmp_path, "2026-09-14")
+    build_edition.publish(con, tmp_path, "2026-09-14")
 
     expected = con.execute("select * from marts.mart_mrt_premium_by_band").df()
     actual = edition.read_table("mart_mrt_premium_by_band", tmp_path)
@@ -93,7 +92,7 @@ def test_a_mart_round_trips_through_the_reader_unchanged(tmp_path):
 
 
 def test_sales_has_one_row_per_transaction_and_no_ingest_bookkeeping(tmp_path):
-    publish_edition.publish(warehouse(sales_rows=5), tmp_path, "2026-09-14")
+    build_edition.publish(warehouse(sales_rows=5), tmp_path, "2026-09-14")
 
     sales = edition.read_sales(tmp_path)
 
@@ -105,14 +104,14 @@ def test_sales_has_one_row_per_transaction_and_no_ingest_bookkeeping(tmp_path):
 def test_an_empty_warehouse_is_refused_rather_than_published(tmp_path):
     # A zero-sale edition would render every chart blank and stamp "0 sales" on
     # FINDINGS.md. That is a broken build, not a quiet month.
-    with pytest.raises(publish_edition.PublishError):
-        publish_edition.publish(warehouse(sales_rows=0), tmp_path, "2026-09-14")
+    with pytest.raises(build_edition.PublishError):
+        build_edition.publish(warehouse(sales_rows=0), tmp_path, "2026-09-14")
 
     assert not (tmp_path / edition.STAMP_FILE).exists()
 
 
 def test_the_stamp_file_is_stable_json(tmp_path):
-    publish_edition.publish(warehouse(), tmp_path, "2026-09-14")
+    build_edition.publish(warehouse(), tmp_path, "2026-09-14")
 
     text = (tmp_path / edition.STAMP_FILE).read_text(encoding="utf-8")
 

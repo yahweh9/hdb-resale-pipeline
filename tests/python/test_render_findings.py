@@ -5,8 +5,7 @@ import json
 import pandas as pd
 import pytest
 
-import edition
-import render_findings
+from publish import edition, render_findings
 
 
 @pytest.fixture
@@ -95,7 +94,7 @@ def test_check_names_every_stale_document_before_failing(root, tmp_path, monkeyp
     real_render = render_findings.render
     monkeypatch.setattr(render_findings, "render", lambda text: real_render(text, root))
     monkeypatch.setattr(render_findings, "DOCUMENTS", paths)
-    monkeypatch.setattr("sys.argv", ["render_findings.py", "--check"])
+    monkeypatch.setattr("sys.argv", ["render_findings", "--check"])
 
     with pytest.raises(SystemExit) as exit_:
         render_findings.main()
