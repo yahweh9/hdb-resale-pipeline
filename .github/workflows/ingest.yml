@@ -76,7 +76,7 @@ jobs:
         env:
           ONEMAP_EMAIL: ${{ secrets.ONEMAP_EMAIL }}
           ONEMAP_PASSWORD: ${{ secrets.ONEMAP_PASSWORD }}
-        run: python onemap_utils.py --target hdb
+        run: python onemap_utils.py
 
       # Saved as soon as bronze is complete, not at the end of the job. A failing data
       # test says nothing about the bronze files, and a combined cache step would

@@ -400,7 +400,7 @@ streamlit run dashboard.py
 ```bash
 python ingest_hdb.py --full           # ~240k rows, 48 API pages, about four minutes
 python ingest_mrt_data.py             # MRT/LRT stations from Wikidata
-python onemap_utils.py --target hdb   # geocode every block via OneMap, about half an hour
+python onemap_utils.py   # geocode every block via OneMap, about half an hour
 dbt deps && dbt build                 # 26 models, 105 tests, about 30 seconds
 python publish_edition.py             # refresh published/
 python render_findings.py             # refill the tables in FINDINGS.md and README.md
