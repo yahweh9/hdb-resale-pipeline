@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/yahweh9/hdb-resale-pipeline/actions/workflows/ci.yml)
 
+**[Open the live dashboard](https://hdb-resale-pipeline-swbi9a9mem46f9g87msje4.streamlit.app/)**
+
 I built this project while learning data analytics. I wanted to practise on a real,
 messy dataset rather than a tidy tutorial one, and Singapore's HDB resale records are a
 good fit: they're public, updated every month, and easy to relate to.
@@ -108,8 +110,10 @@ building the database, and checking the write-up matches the published numbers.
 
 ## Try it
 
-The dashboard runs from the published numbers in this repo, so you don't need an API key
-or to download anything first:
+**[The dashboard is live here](https://hdb-resale-pipeline-swbi9a9mem46f9g87msje4.streamlit.app/)** -- nothing to install.
+
+It also runs locally from the published numbers in this repo, with no API key and
+nothing to download first:
 
 ```bash
 pip install -r requirements.txt
