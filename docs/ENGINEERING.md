@@ -5,25 +5,23 @@ to the charts, and how I check it along the way. You don't need it to understand
 results. For those, start with [README.md](../README.md) and
 [FINDINGS.md](../FINDINGS.md).
 
-It's the most technical page in the project, so here's the short version first.
-
 ## The short version
 
-1. **Download.** Python scripts download every HDB resale sale from data.gov.sg, the
+1. Download. Python scripts download every HDB resale sale from data.gov.sg, the
    locations of MRT stations from Wikidata, and a map location for every block from
    OneMap. The raw files are saved exactly as they arrive and never edited.
-2. **Clean.** SQL models, run by a tool called dbt, turn the raw files into tidy tables
+2. Clean. SQL models, run by a tool called dbt, turn the raw files into tidy tables
    inside DuckDB, a small database that runs on a laptop. This step fixes formats,
    spellings and data types.
-3. **Organise.** The tidy tables are arranged as one big table of sales, plus smaller
+3. Organise. The tidy tables are arranged as one big table of sales, plus smaller
    lookup tables for dates, towns, flat types and blocks. That makes every question a
    simple lookup.
-4. **Model.** The pricing model runs inside the same dbt build, so it always uses the
+4. Model. The pricing model runs inside the same dbt build, so it always uses the
    latest cleaned data.
-5. **Check.** More than a hundred automatic checks run on every build and fail it if
+5. Check. More than a hundred automatic checks run on every build and fail it if
    something looks wrong, like a missing sale, a duplicate, or a model that stops
    beating a simple guess.
-6. **Publish.** When I'm happy with the results, a script saves the final numbers into
+6. Publish. When I'm happy with the results, a script saves the final numbers into
    the `published/` folder. The dashboard and FINDINGS.md both read from there, so they
    can never show different numbers.
 
@@ -31,16 +29,16 @@ It's the most technical page in the project, so here's the short version first.
 
 | Word | What it means here |
 |---|---|
-| **Bronze / silver / gold** | The raw data as downloaded / cleaned data / organised, ready-to-use data |
-| **Mart** | A small table holding exactly the numbers behind one chart or table |
-| **dbt** | A tool that runs SQL files in the right order and tests the results |
-| **Fact table / dimension** | The big table of sales / the lookup tables that describe them (towns, flats, blocks, dates) |
-| **Partition** | One file per month of sales, so a month can be replaced without touching the rest |
-| **Idempotent** | Safe to run twice: running it again gives the same result, not duplicates |
-| **High-water mark** | How far the download has already got, so the next run only fetches what's new |
-| **CI** | Continuous integration: GitHub re-runs the whole build and every check on each change |
-| **Fixture** | A small sample of the data kept in the repo, so the checks can run without downloading everything |
-| **Edition** | The saved set of published numbers, stamped with the date of the data |
+| Bronze / silver / gold | The raw data as downloaded / cleaned data / organised, ready-to-use data |
+| Mart | A small table holding exactly the numbers behind one chart or table |
+| dbt | A tool that runs SQL files in the right order and tests the results |
+| Fact table / dimension | The big table of sales / the lookup tables that describe them (towns, flats, blocks, dates) |
+| Partition | One file per month of sales, so a month can be replaced without touching the rest |
+| Idempotent | Safe to run twice: running it again gives the same result, not duplicates |
+| High-water mark | How far the download has already got, so the next run only fetches what's new |
+| CI | Continuous integration: GitHub re-runs the whole build and every check on each change |
+| Fixture | A small sample of the data kept in the repo, so the checks can run without downloading everything |
+| Edition | The saved set of published numbers, stamped with the date of the data |
 
 ---
 
@@ -89,7 +87,7 @@ Built and tested by GitHub Actions on every pull request.
 
 ## Data source
 
-[HDB Resale Flat Prices](https://data.gov.sg) -- data.gov.sg, resource
+[HDB Resale Flat Prices](https://data.gov.sg) from data.gov.sg, resource
 `d_8b84c4ee58e3cfc0ece0d773c8ca6abc`, updated monthly.
 
 - **Records:** 240,074 resale transactions
@@ -135,8 +133,8 @@ begins, so "already fetched" is not the same as "finished".
 
 ## Data model
 
-A star schema. Dimensions are deliberately denormalized -- the redundancy compresses
-away columnar, and every query stays a single join from the fact table.
+A star schema. Dimensions are deliberately denormalized: the redundancy compresses away
+columnar, and every query stays a single join from the fact table.
 
 ```
      dim_date     dim_town     dim_flat     dim_block
@@ -156,13 +154,14 @@ away columnar, and every query stays a single join from the fact table.
 | `silver_hdb_coordinates` | one geocoded block address | 9,744 |
 | `silver_mrt_stations` | one operational MRT/LRT station | 181 |
 
-**`fact_resale_txn`** -- measures: `resale_price`, `price_psm`, `floor_area_sqm`,
-`remaining_lease_months`. `source_txn_id` is carried as a degenerate dimension so any
-fact row can be traced back to the bronze partition it came from.
+**`fact_resale_txn`** holds the measures `resale_price`, `price_psm`,
+`floor_area_sqm` and `remaining_lease_months`. `source_txn_id` is carried as a
+degenerate dimension so any fact row can be traced back to the bronze partition it
+came from.
 
 **`dim_block` carries the spatial attributes**, not the fact. Location is a property of
 the block, so `dist_to_nearest_mrt_km` on the fact would store the same value across
-every sale in that block -- 240,074 rows to describe 9,744 things. The nearest station is
+every sale in that block, 240,074 rows to describe 9,744 things. The nearest station is
 found by a 9,744 x 181 cross join, which DuckDB resolves in under a second; a spatial
 index is the answer at a hundred times this size.
 
@@ -175,7 +174,7 @@ one macro. Nothing in Python or the dashboard re-derives a band.
 
 **`dim_flat` is Type 1, deliberately.** These attributes describe the flat *as sold*
 on that date. They do not change afterwards, so there is no later version of the row
-for a Type 2 history to preserve -- a `valid_from`/`valid_to` pair here would carry
+for a Type 2 history to preserve, and a `valid_from`/`valid_to` pair here would carry
 no information. The same reasoning covers `dim_town`: when HDB reclassifies a town's
 planning region, the correct answer is that it always belonged to the new one.
 Nothing in this schema has a genuine slowly-changing attribute, and adding SCD2
@@ -206,8 +205,8 @@ the result. The statistics live in modules pytest can import without dbt, a ware
 or any file on disk.
 
 **Tested against a planted answer.** [tests/python/synthetic.py](../tests/python/synthetic.py)
-generates a market with known effects -- town premiums, an MRT premium, lease decay, a
-price trend, block premiums -- and the tests assert the fit recovers them. The same market
+generates a market with known effects (town premiums, an MRT premium, lease decay, a
+price trend, block premiums), and the tests assert the fit recovers them. The same market
 covers the awkward cases: a band with no sales, a year too thin to identify, a holdout
 that must pick the same fifth of blocks every run, and a design that cannot be solved,
 which must raise rather than return arbitrary numbers.
@@ -258,7 +257,7 @@ implementations of one number either agree or the build is red.
 
 ## Data quality
 
-Every build runs 131 dbt nodes -- 26 models and 105 data tests -- and 90 pytest tests
+Every build runs 131 dbt nodes (26 models and 105 data tests) and 90 pytest tests
 (39 on the ingest, 51 on the model, the edition and the documents). The build fails if
 any of them fail.
 
@@ -280,7 +279,7 @@ The model's own gates are listed [above](#the-analytics-layer-engineered).
 **The bug the tests did not catch, and why.** Silver originally deduplicated on `_id`,
 data.gov.sg's row identifier. It is not one: it is a row offset in their datastore, and
 it is reassigned when they republish. 579 `_id` values currently appear twice, and every
-pair differs in block, street and floor area -- different sales sharing a row number. The
+pair differs in block, street and floor area: different sales sharing a row number. The
 deduplication was deleting 579 real transactions, and the `unique` test on that column
 passed *because* the dedup had removed its own evidence before the test ran.
 
@@ -293,7 +292,7 @@ the fixture. The fix was to measure three candidate keys instead of arguing abou
 | Full business key | 403 |
 | `(month, _id)` | 0 |
 
-The business key is worse than it sounds -- identical units in one block do sell in the
+The business key is worse than it sounds. Identical units in one block do sell in the
 same month at the same price, so it collapses 403 genuine sales. `(month, _id)` is exact,
 and the deduplication was removed entirely rather than re-keyed: with zero collisions the
 `qualify` removed nothing, so it was dead code that looked like a safeguard. The
@@ -313,7 +312,7 @@ FAIL 748 relationships_fact_resale_txn_flat_key__flat_key__ref_dim_flat_
 The first was expected. The second is the more interesting one: `dim_flat` is a table
 and rebuilds completely, while `fact_resale_txn` is incremental and does not, so a
 change to a hashed natural key orphans every fact row built before it against a
-dimension rebuilt after it. That is precisely the late-arriving-dimension failure the
+dimension rebuilt after it. That is the late-arriving-dimension failure the
 `relationships` test exists for, and it is invisible to any row-level uniqueness
 check. `assert_every_town_has_a_region` is a live tripwire rather than a
 hypothetical: Tengah's first resale flats reach the market shortly, and the day a
@@ -333,7 +332,7 @@ rows on every run, so a crash mid-write took the entire history with it.
 
 **The high-water mark is the data.** `read_high_water_mark()` takes the newest
 `month=YYYY-MM` directory under the bronze root. Because `month` lives in the directory
-name and not in the parquet bodies, this is a string max over directory names -- no
+name and not in the parquet bodies, this is a string max over directory names, and no
 parquet is opened at all.
 
 An earlier version asked DuckDB for it. That was measured and abandoned: at 117
@@ -352,16 +351,16 @@ There is no second source of truth to drift out of sync with what is actually on
 disk. And it self-heals: a run that dies after writing 2024-01 but before writing
 2024-02 leaves a mark of 2024-01, so the next run re-fetches from there. A stored
 mark would already have been advanced, and 2024-02 would be lost silently and
-permanently. A manifest is the better answer once listing partitions costs real money
--- see [at scale](#what-i-would-do-differently-at-scale). There is a test that pins
-this behaviour down: delete the newest partition and the mark rolls back with it.
+permanently. A manifest is the better answer once listing partitions costs real money; see
+[at scale](#what-i-would-do-differently-at-scale). There is a test that pins this
+behaviour down: delete the newest partition and the mark rolls back with it.
 
 **The newest month is re-fetched, not skipped.** A month stays open. Transactions
 keep registering against 2026-09 throughout September, so skipping it would freeze a
 partial month on disk permanently. Paging is newest-first and stops at the first row
 older than the mark, which means every month at or after the mark comes back
-*complete* -- and that completeness is exactly what makes replacing a month wholesale
-safe rather than destructive.
+*complete*, and that completeness is what makes replacing a month wholesale safe
+rather than destructive.
 
 **The fact model's incremental unit is a month, not a row.**
 
@@ -372,8 +371,8 @@ incremental_strategy = 'delete+insert'
 ```
 
 `delete+insert` keyed on `date_key` drops every fact row for each month in the
-incoming batch and re-inserts it, mirroring bronze exactly. The obvious alternative
--- keying on `resale_txn_key`, the transaction surrogate -- looks safer and is worse:
+incoming batch and re-inserts it, mirroring bronze exactly. The obvious alternative,
+keying on `resale_txn_key`, the transaction surrogate, looks safer and is worse:
 it merges rather than replaces, so any transaction data.gov.sg later withdrew from an
 open month would linger in the fact forever. The fact would keep serving a
 transaction the source no longer reports, and no uniqueness test would ever see it.
@@ -416,10 +415,10 @@ fact incrementally. Publishing is a separate, deliberate step: re-read the prose
 FINDINGS.md against the new numbers before committing an edition.
 
 `ONEMAP_EMAIL` and `ONEMAP_PASSWORD` in `.env` are needed for the geocoding step. An
-`API_KEY` is optional -- data.gov.sg serves this dataset anonymously but rate-limits
+`API_KEY` is optional: data.gov.sg serves this dataset anonymously but rate-limits
 harder without one.
 
-**Offline, against the committed 766-row sample** -- this is what CI does:
+**Offline, against the committed 766-row sample.** This is what CI does:
 
 ```bash
 python -m ingest.seed_fixture
@@ -484,8 +483,8 @@ docs/                         This document, the analytics plan, and the screens
 - **Scan-based high-water mark to a manifest.** Reading `max(month)` off the
   partition paths is the right call at 117 partitions on local disk, where it is free
   and cannot drift. On object storage with tens of thousands of partitions the LIST
-  call becomes the dominant cost of every run, and a manifest -- or a table format
-  like Iceberg or Delta that maintains one for you -- pays for the extra moving part.
+  call becomes the dominant cost of every run, and a manifest (or a table format
+  like Iceberg or Delta that maintains one for you) pays for the extra moving part.
   The self-healing property is what you give up, so the manifest write has to be
   committed in the same transaction as the data.
 - **DuckDB to a warehouse.** DuckDB is single-node by design. At real volume this
